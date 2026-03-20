@@ -2,141 +2,119 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Entube - 메인</title>
+    <title>Entube - 영상 업로드</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --bg-color: #0f0f0f; --text-color: #f1f1f1; --accent: #ff0000; --card-bg: #212121; }
-        body { font-family: 'Arial', sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; }
-        .navbar { display: flex; justify-content: space-between; align-items: center; padding: 10px 30px; background: var(--bg-color); border-bottom: 1px solid #333; position: sticky; top: 0; z-index: 100; }
-        .logo { font-size: 24px; font-weight: bold; cursor: pointer; color: white; }
-        .logo span { color: var(--accent); }
-        .user-chip { display: flex; align-items: center; gap: 10px; background: #333; padding: 5px 15px; border-radius: 20px; cursor: pointer; }
-        .user-chip img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
-        .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding: 20px; }
-        .video-card { background: var(--card-bg); border-radius: 12px; overflow: hidden; }
-        .video-card video { width: 100%; aspect-ratio: 16/9; background: #000; }
-        .v-info { padding: 15px; display: flex; gap: 12px; }
-        .v-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: #444; }
-        .v-text p { margin: 0; font-weight: bold; }
-        .v-text span { font-size: 13px; color: #aaa; }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: var(--card-bg); padding: 30px; border-radius: 15px; width: 320px; text-align: center; }
-        input { width: 90%; padding: 10px; margin: 10px 0; background: #121212; border: 1px solid #444; color: white; }
-        button { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; }
-        .btn-red { background: var(--accent); color: white; width: 100%; margin-top: 10px; }
+        body { font-family: 'Arial', sans-serif; background: var(--bg-color); color: var(--text-color); display: flex; flex-direction: column; align-items: center; padding: 50px; margin: 0; }
+        .upload-box { background: var(--card-bg); padding: 40px; border-radius: 15px; width: 100%; max-width: 500px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        h2 { margin-bottom: 25px; color: white; }
+        input[type="text"] { width: 90%; padding: 12px; margin-bottom: 20px; background: #121212; border: 1px solid #444; color: white; border-radius: 8px; outline: none; }
+        input[type="file"] { margin-bottom: 20px; color: #aaa; font-size: 14px; }
+        #preview { width: 100%; border-radius: 8px; margin-bottom: 20px; display: none; background: #000; aspect-ratio: 16/9; }
+        button { width: 100%; padding: 15px; background: var(--accent); border: none; color: white; font-weight: bold; font-size: 16px; cursor: pointer; border-radius: 8px; transition: 0.2s; }
+        button:hover { background: #cc0000; }
+        button:disabled { background: #444; cursor: not-allowed; }
+        #status { margin-top: 20px; font-size: 14px; color: #aaa; }
+        .back-link { display: block; margin-top: 20px; color: #3ea6ff; text-decoration: none; font-size: 14px; }
     </style>
 </head>
 <body>
-    <nav class="navbar">
-        <div class="logo" onclick="location.reload()">▶ <span>Entube</span></div>
-        <div id="authSection"></div>
-    </nav>
 
-    <div class="video-grid" id="videoGrid"></div>
+    <div class="upload-box">
+        <h2>🎬 Entube 스튜디오</h2>
+        <input type="text" id="videoTitle" placeholder="영상 제목을 입력하세요">
+        <input type="file" id="videoFile" accept="video/*">
+        
+        <video id="preview" controls></video>
 
-    <div id="profileModal" class="modal">
-        <div class="modal-content">
-            <h3>내 프로필 설정</h3>
-            <img id="myPfpPreview" src="" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 10px;">
-            <input type="file" id="pfpInput" accept="image/*">
-            <input type="text" id="nickInput" placeholder="닉네임 입력">
-            <button class="btn-red" onclick="saveProfile()">저장하기</button>
-            <button onclick="closeModal()" style="background:none; color:#aaa; margin-top:10px;">닫기</button>
-        </div>
+        <button id="uploadBtn">유튜브에 영상 올리기</button>
+        <p id="status">파일을 선택하고 제목을 적어주세요.</p>
+        
+        <a href="index.html" class="back-link">← 메인 화면으로 돌아가기</a>
     </div>
 
     <script>
+        // 🚨 빤쭌아, 키는 내가 이미 넣어뒀어!
         const supabaseUrl = 'https://kzchubdwrkcpmuempgrg.supabase.co';
         const supabaseKey = 'sb_publishable_MyFF5Xln3fWLvTqMx2CFNA_obZtoask'; 
         const _client = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        let myProfile = null;
+        const fileInput = document.getElementById('videoFile');
+        const preview = document.getElementById('preview');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const statusText = document.getElementById('status');
+        const titleInput = document.getElementById('videoTitle');
 
-        _client.auth.onAuthStateChange(async (_event, session) => {
-            if (session) {
-                const { data } = await _client.from('profiles').select('*').eq('id', session.user.id).single();
-                if (!data) { // 프로필 없으면 기본값으로 생성
-                    await _client.from('profiles').insert([{ id: session.user.id }]);
-                    location.reload();
-                }
-                myProfile = data;
-            } else { myProfile = null; }
-            updateUI();
-            loadVideos();
-        });
+        let selectedFile = null;
 
-        function updateUI() {
-            const area = document.getElementById('authSection');
-            if (myProfile) {
-                area.innerHTML = `
-                    <div style="display:flex; gap:10px; align-items:center;">
-                        <button onclick="location.href='upload.html'" style="background:red; color:white;">업로드</button>
-                        <div class="user-chip" onclick="openProfileModal()">
-                            <img src="${myProfile.avatar_url}">
-                            <span>${myProfile.nickname}</span>
-                        </div>
-                        <button onclick="_client.auth.signOut()" style="background:none; color:#aaa;">로그아웃</button>
-                    </div>`;
-            } else {
-                area.innerHTML = `<button onclick="handleLogin()" style="background:white; color:black;">로그인 / 가입</button>`;
-            }
-        }
-
-        async function handleLogin() {
-            const email = prompt("이메일 입력:");
-            const password = prompt("비밀번호(6자이상):");
-            if(email && password) {
-                const { error } = await _client.auth.signInWithPassword({ email, password });
-                if(error) await _client.auth.signUp({ email, password });
-            }
-        }
-
-        async function loadVideos() {
-            const grid = document.getElementById('videoGrid');
-            grid.innerHTML = '로딩 중...';
-            // posts와 profiles를 합쳐서 가져오기
-            const { data: videos } = await _client.from('posts').select('*, profiles(nickname, avatar_url)').order('created_at', { ascending: false });
-            
-            grid.innerHTML = '';
-            videos?.forEach(v => {
-                const nick = v.profiles?.nickname || '알 수 없음';
-                const pfp = v.profiles?.avatar_url || 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png';
-                const div = document.createElement('div');
-                div.className = 'video-card';
-                div.innerHTML = `
-                    <video src="${v.video_url}" controls></video>
-                    <div class="v-info">
-                        <img src="${pfp}" class="v-avatar">
-                        <div class="v-text">
-                            <p>${v.title}</p>
-                            <span>${nick}</span>
-                        </div>
-                    </div>`;
-                grid.appendChild(div);
-            });
-        }
-
-        function openProfileModal() {
-            document.getElementById('profileModal').style.display = 'flex';
-            document.getElementById('myPfpPreview').src = myProfile.avatar_url;
-            document.getElementById('nickInput').value = myProfile.nickname;
-        }
-        function closeModal() { document.getElementById('profileModal').style.display = 'none'; }
-
-        async function saveProfile() {
-            const nick = document.getElementById('nickInput').value;
-            const file = document.getElementById('pfpInput').files[0];
-            let url = myProfile.avatar_url;
-
+        // 1. 파일 선택 시 미리보기
+        fileInput.onchange = (e) => {
+            const file = e.target.files[0];
             if (file) {
-                const path = `pfp_${Date.now()}.${file.name.split('.').pop()}`;
-                await _client.storage.from('avatars').upload(path, file);
-                url = _client.storage.from('avatars').getPublicUrl(path).data.publicUrl;
+                selectedFile = file;
+                preview.src = URL.createObjectURL(file);
+                preview.style.display = 'block';
+                statusText.innerText = "준비 완료! 업로드 버튼을 눌러주세요.";
             }
+        };
 
-            const { error } = await _client.from('profiles').update({ nickname: nick, avatar_url: url }).eq('id', myProfile.id);
-            if (!error) location.reload();
-        }
+        // 2. 업로드 버튼 클릭 이벤트
+        uploadBtn.onclick = async () => {
+            const title = titleInput.value.trim();
+            const { data: { session } } = await _client.auth.getSession();
+
+            // 유효성 검사
+            if (!session) return alert("로그인이 필요합니다! 메인에서 로그인하고 오세요.");
+            if (!title) return alert("영상 제목을 적어주세요!");
+            if (!selectedFile) return alert("올릴 영상을 선택해주세요!");
+
+            // 업로드 시작 UI 변경
+            uploadBtn.disabled = true;
+            statusText.innerText = "⏳ 영상을 서버로 쏘는 중... 잠시만 기다려!";
+            statusText.style.color = "#3ea6ff";
+
+            try {
+                // 🛡️ [파일명 에러 방지] 한글/공백 제거하고 숫자로 파일명 생성
+                const ext = selectedFile.name.split('.').pop();
+                const safeFileName = `entube_${Date.now()}.${ext}`;
+
+                // (1) Storage(바구니)에 파일 업로드
+                const { data: sData, error: sErr } = await _client.storage
+                    .from('videos')
+                    .upload(safeFileName, selectedFile);
+
+                if (sErr) throw sErr;
+
+                // (2) 파일의 공개 인터넷 주소 가져오기
+                const { data: { publicUrl } } = _client.storage
+                    .from('videos')
+                    .getPublicUrl(safeFileName);
+
+                // (3) 데이터베이스(posts)에 영상 정보 저장 (author_id 포함)
+                const { error: dErr } = await _client.from('posts').insert([
+                    { 
+                        title: title, 
+                        video_url: publicUrl, 
+                        author_id: session.user.id 
+                    }
+                ]);
+
+                if (dErr) throw dErr;
+
+                // 성공!
+                statusText.innerText = "✅ 업로드 성공! 2초 뒤에 메인으로 보낼게!";
+                statusText.style.color = "#00e676";
+                setTimeout(() => { location.href = 'index.html'; }, 2000);
+
+            } catch (err) {
+                console.error(err);
+                alert("에러 발생: " + err.message);
+                uploadBtn.disabled = false;
+                statusText.innerText = "❌ 실패했어. 다시 한 번 해볼까?";
+                statusText.style.color = "#ff4a4a";
+            }
+        };
     </script>
 </body>
 </html>
