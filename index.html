@@ -19,124 +19,105 @@
         .v-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: #444; }
         .v-text p { margin: 0; font-weight: bold; }
         .v-text span { font-size: 13px; color: #aaa; }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: var(--card-bg); padding: 30px; border-radius: 15px; width: 320px; text-align: center; }
-        input { width: 90%; padding: 10px; margin: 10px 0; background: #121212; border: 1px solid #444; color: white; }
-        button { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; }
-        .btn-red { background: var(--accent); color: white; width: 100%; margin-top: 10px; }
     </style>
 </head>
 <body>
     <nav class="navbar">
         <div class="logo" onclick="location.reload()">▶ <span>Entube</span></div>
-        <div id="authSection"></div>
+        <div id="authSection">
+            <button onclick="handleLogin()" style="background:white; color:black; padding:8px 16px; border-radius:20px; border:none; font-weight:bold; cursor:pointer;">로그인 / 가입</button>
+        </div>
     </nav>
 
-    <div class="video-grid" id="videoGrid"></div>
-
-    <div id="profileModal" class="modal">
-        <div class="modal-content">
-            <h3>내 프로필 설정</h3>
-            <img id="myPfpPreview" src="" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 10px;">
-            <input type="file" id="pfpInput" accept="image/*">
-            <input type="text" id="nickInput" placeholder="닉네임 입력">
-            <button class="btn-red" onclick="saveProfile()">저장하기</button>
-            <button onclick="closeModal()" style="background:none; color:#aaa; margin-top:10px;">닫기</button>
-        </div>
+    <div class="video-grid" id="videoGrid">
+        <p style="padding:20px;">데이터를 연결하는 중입니다...</p>
     </div>
 
     <script>
+        // 🚨 빤쭌아, 이 주소랑 키가 내 수퍼베이스 대시보드랑 똑같은지 한 번만 더 봐줘!
         const supabaseUrl = 'https://kzchubdwrkcpmuempgrg.supabase.co';
         const supabaseKey = 'sb_publishable_MyFF5Xln3fWLvTqMx2CFNA_obZtoask'; 
         const _client = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         let myProfile = null;
 
-        _client.auth.onAuthStateChange(async (_event, session) => {
-            if (session) {
-                const { data } = await _client.from('profiles').select('*').eq('id', session.user.id).single();
-                if (!data) { // 프로필 없으면 기본값으로 생성
-                    await _client.from('profiles').insert([{ id: session.user.id }]);
-                    location.reload();
+        // 에러가 나도 화면이 멈추지 않게 감싸줌
+        async function init() {
+            try {
+                const { data: { session } } = await _client.auth.getSession();
+                if (session) {
+                    const { data } = await _client.from('profiles').select('*').eq('id', session.user.id).single();
+                    myProfile = data;
                 }
-                myProfile = data;
-            } else { myProfile = null; }
-            updateUI();
-            loadVideos();
-        });
+                updateUI();
+                loadVideos();
+            } catch (err) {
+                console.error("초기화 에러:", err);
+                updateUI(); // 에러 나도 로그인 버튼은 보여줌
+            }
+        }
 
         function updateUI() {
             const area = document.getElementById('authSection');
             if (myProfile) {
                 area.innerHTML = `
                     <div style="display:flex; gap:10px; align-items:center;">
-                        <button onclick="location.href='upload.html'" style="background:red; color:white;">업로드</button>
-                        <div class="user-chip" onclick="openProfileModal()">
-                            <img src="${myProfile.avatar_url}">
-                            <span>${myProfile.nickname}</span>
+                        <button onclick="location.href='upload.html'" style="background:red; color:white; border:none; padding:8px 15px; border-radius:15px; cursor:pointer;">+ 업로드</button>
+                        <div class="user-chip">
+                            <img src="${myProfile.avatar_url || ''}">
+                            <span>${myProfile.nickname || '익명'}</span>
                         </div>
-                        <button onclick="_client.auth.signOut()" style="background:none; color:#aaa;">로그아웃</button>
+                        <button onclick="logout()" style="background:none; border:none; color:#aaa; cursor:pointer;">로그아웃</button>
                     </div>`;
-            } else {
-                area.innerHTML = `<button onclick="handleLogin()" style="background:white; color:black;">로그인 / 가입</button>`;
             }
         }
 
+        async function logout() { await _client.auth.signOut(); location.reload(); }
+
         async function handleLogin() {
-            const email = prompt("이메일 입력:");
-            const password = prompt("비밀번호(6자이상):");
-            if(email && password) {
-                const { error } = await _client.auth.signInWithPassword({ email, password });
-                if(error) await _client.auth.signUp({ email, password });
+            const email = prompt("이메일:");
+            const pw = prompt("비밀번호(6자이상):");
+            if (email && pw) {
+                const { error } = await _client.auth.signInWithPassword({ email, password: pw });
+                if (error) await _client.auth.signUp({ email, password: pw });
+                location.reload();
             }
         }
 
         async function loadVideos() {
             const grid = document.getElementById('videoGrid');
-            grid.innerHTML = '로딩 중...';
-            // posts와 profiles를 합쳐서 가져오기
-            const { data: videos } = await _client.from('posts').select('*, profiles(nickname, avatar_url)').order('created_at', { ascending: false });
-            
-            grid.innerHTML = '';
-            videos?.forEach(v => {
-                const nick = v.profiles?.nickname || '알 수 없음';
-                const pfp = v.profiles?.avatar_url || 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png';
-                const div = document.createElement('div');
-                div.className = 'video-card';
-                div.innerHTML = `
-                    <video src="${v.video_url}" controls></video>
-                    <div class="v-info">
-                        <img src="${pfp}" class="v-avatar">
-                        <div class="v-text">
-                            <p>${v.title}</p>
-                            <span>${nick}</span>
-                        </div>
-                    </div>`;
-                grid.appendChild(div);
-            });
-        }
+            try {
+                // ⚠️ 여기서 에러가 많이 남 (테이블 연결 문제)
+                const { data: videos, error } = await _client.from('posts').select('*, profiles(nickname, avatar_url)');
+                
+                if (error) throw error;
 
-        function openProfileModal() {
-            document.getElementById('profileModal').style.display = 'flex';
-            document.getElementById('myPfpPreview').src = myProfile.avatar_url;
-            document.getElementById('nickInput').value = myProfile.nickname;
-        }
-        function closeModal() { document.getElementById('profileModal').style.display = 'none'; }
+                grid.innerHTML = '';
+                if (!videos || videos.length === 0) {
+                    grid.innerHTML = '<p>아직 영상이 없습니다. 첫 영상을 올려보세요!</p>';
+                    return;
+                }
 
-        async function saveProfile() {
-            const nick = document.getElementById('nickInput').value;
-            const file = document.getElementById('pfpInput').files[0];
-            let url = myProfile.avatar_url;
-
-            if (file) {
-                const path = `pfp_${Date.now()}.${file.name.split('.').pop()}`;
-                await _client.storage.from('avatars').upload(path, file);
-                url = _client.storage.from('avatars').getPublicUrl(path).data.publicUrl;
+                videos.forEach(v => {
+                    const nick = v.profiles?.nickname || '유튜버';
+                    const pfp = v.profiles?.avatar_url || '';
+                    const div = document.createElement('div');
+                    div.className = 'video-card';
+                    div.innerHTML = `
+                        <video src="${v.video_url}" controls></video>
+                        <div class="v-info">
+                            <img src="${pfp}" class="v-avatar">
+                            <div class="v-text"><p>${v.title}</p><span>${nick}</span></div>
+                        </div>`;
+                    grid.appendChild(div);
+                });
+            } catch (err) {
+                console.error("영상 로드 에러:", err);
+                grid.innerHTML = `<p style="color:red;">영상을 불러오지 못했습니다. (SQL 에러일 확률 99%)</p>`;
             }
-
-            const { error } = await _client.from('profiles').update({ nickname: nick, avatar_url: url }).eq('id', myProfile.id);
-            if (!error) location.reload();
         }
+
+        init();
     </script>
 </body>
 </html>
