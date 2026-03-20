@@ -17,9 +17,10 @@
         .search-box input { flex: 1; padding: 10px 15px; background: transparent; border: none; color: white; outline: none; }
         .search-box button { padding: 10px 20px; background: #222; color: white; border: none; cursor: pointer; }
 
-        /* 버튼 디자인 */
+        /* 버튼 & 유저 칩 */
         .btn-auth { background: #3ea6ff; color: black; border: none; padding: 8px 18px; border-radius: 20px; font-weight: bold; cursor: pointer; }
-        .user-chip { display: flex; align-items: center; gap: 10px; background: #333; padding: 5px 15px; border-radius: 20px; cursor: pointer; }
+        .user-chip { display: flex; align-items: center; gap: 10px; background: #333; padding: 5px 15px; border-radius: 20px; cursor: pointer; border: 1px solid transparent; }
+        .user-chip:hover { background: #444; border-color: #555; }
         .user-chip img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: #555; }
 
         /* 영상 그리드 */
@@ -31,11 +32,11 @@
         .v-text p { margin: 0; font-weight: bold; font-size: 15px; color: white; }
         .v-text span { font-size: 13px; color: #aaa; }
 
-        /* 🔐 모달 스타일 */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); justify-content: center; align-items: center; z-index: 2000; }
-        .modal-content { background: var(--card-bg); padding: 30px; border-radius: 15px; width: 320px; text-align: center; }
-        .modal-content input { width: 100%; padding: 12px; margin: 10px 0; background: #121212; border: 1px solid #444; color: white; border-radius: 5px; box-sizing: border-box; }
-        .btn-main { width: 100%; padding: 12px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        /* 🛠 모달 (로그인/회원가입/프로필 통합) */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); justify-content: center; align-items: center; z-index: 2000; }
+        .modal-content { background: var(--card-bg); padding: 35px; border-radius: 15px; width: 340px; text-align: center; }
+        .modal-content input { width: 100%; padding: 12px; margin: 10px 0; background: #121212; border: 1px solid #444; color: white; border-radius: 8px; box-sizing: border-box; }
+        .btn-full { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 15px; }
     </style>
 </head>
 <body>
@@ -46,7 +47,7 @@
             <button onclick="searchVideos()">🔍</button>
         </div>
         <div id="authSection">
-            <button class="btn-auth" onclick="openModal('authModal')">로그인 / 가입</button>
+            <button class="btn-auth" onclick="toggleModal('authModal', true)">로그인 / 가입</button>
         </div>
     </nav>
 
@@ -54,23 +55,23 @@
 
     <div id="authModal" class="modal">
         <div class="modal-content">
-            <h2 style="margin:0 0 10px 0;">Entube 로그인</h2>
-            <input type="email" id="authEmail" placeholder="이메일">
+            <h2 style="margin:0 0 15px 0;">Entube 시작하기</h2>
+            <input type="email" id="authEmail" placeholder="이메일 주소">
             <input type="password" id="authPw" placeholder="비밀번호 (6자 이상)">
-            <button class="btn-main" style="background:white; color:black;" onclick="handleAuth('login')">로그인</button>
-            <button class="btn-main" style="background:transparent; border:1px solid #3ea6ff; color:#3ea6ff;" onclick="handleAuth('signup')">회원가입</button>
-            <button onclick="closeModal('authModal')" style="background:none; border:none; color:#777; margin-top:15px; cursor:pointer;">닫기</button>
+            <button class="btn-full" style="background:white; color:black;" onclick="handleAuth('login')">로그인</button>
+            <button class="btn-full" style="background:transparent; border:1px solid #3ea6ff; color:#3ea6ff;" onclick="handleAuth('signup')">회원가입</button>
+            <button onclick="toggleModal('authModal', false)" style="background:none; border:none; color:#777; margin-top:20px; cursor:pointer; text-decoration:underline;">닫기</button>
         </div>
     </div>
 
     <div id="profileModal" class="modal">
         <div class="modal-content">
-            <h2 style="margin:0 0 15px 0;">프로필 수정</h2>
-            <img id="pfpPreview" src="" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid red; margin-bottom: 10px;">
-            <input type="file" id="pfpInput" accept="image/*" style="font-size: 12px; color:#aaa;">
-            <input type="text" id="nickInput" placeholder="닉네임">
-            <button class="btn-main" style="background:red; color:white;" id="saveBtn" onclick="saveProfile()">저장하기</button>
-            <button onclick="closeModal('profileModal')" style="background:none; border:none; color:#777; margin-top:15px; cursor:pointer;">취소</button>
+            <h2 style="margin:0 0 20px 0;">내 채널 관리</h2>
+            <img id="pfpPreview" src="" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid red; margin-bottom: 15px;">
+            <input type="file" id="pfpInput" accept="image/*" style="font-size: 12px; color:#aaa; margin-bottom: 10px;">
+            <input type="text" id="nickInput" placeholder="변경할 닉네임">
+            <button class="btn-full" style="background:red; color:white;" id="saveBtn" onclick="saveProfile()">설정 저장</button>
+            <button onclick="toggleModal('profileModal', false)" style="background:none; border:none; color:#777; margin-top:15px; cursor:pointer;">취소</button>
         </div>
     </div>
 
@@ -80,88 +81,116 @@
         const _client = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         let myProfile = null;
+        const defaultPfp = 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png';
 
+        // 1. 로그인 상태 감지 및 프로필 자동 생성/불러오기
         _client.auth.onAuthStateChange(async (_event, session) => {
             if (session) {
-                const { data } = await _client.from('profiles').select('*').eq('id', session.user.id).single();
+                const { data, error } = await _client.from('profiles').select('*').eq('id', session.user.id).single();
                 if (!data) {
+                    // 프로필이 없으면 즉시 생성
                     const { data: newProf } = await _client.from('profiles').insert([{ id: session.user.id }]).select().single();
                     myProfile = newProf;
-                } else { myProfile = data; }
-            } else { myProfile = null; }
+                } else {
+                    myProfile = data;
+                }
+            } else {
+                myProfile = null;
+            }
             updateUI();
             loadVideos();
         });
 
+        // 2. 상단 UI 업데이트
         function updateUI() {
             const area = document.getElementById('authSection');
             if (myProfile) {
                 area.innerHTML = `
-                    <div style="display:flex; gap:10px; align-items:center;">
+                    <div style="display:flex; gap:12px; align-items:center;">
                         <button onclick="location.href='upload.html'" style="background:none; border: 1px solid #444; color:white; padding:7px 15px; border-radius:20px; cursor:pointer;">+ 업로드</button>
-                        <div class="user-chip" onclick="openModal('profileModal')">
-                            <img src="${myProfile.avatar_url || 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png'}">
+                        <div class="user-chip" onclick="openProfileEdit()">
+                            <img src="${myProfile.avatar_url || defaultPfp}">
                             <span>${myProfile.nickname || '익명'}</span>
                         </div>
                         <button onclick="_client.auth.signOut()" style="background:none; border:none; color:#777; cursor:pointer; font-size:12px;">로그아웃</button>
                     </div>`;
             } else {
-                area.innerHTML = `<button class="btn-auth" onclick="openModal('authModal')">로그인 / 가입</button>`;
+                area.innerHTML = `<button class="btn-auth" onclick="toggleModal('authModal', true)">로그인 / 가입</button>`;
             }
         }
 
-        function openModal(id) { 
-            document.getElementById(id).style.display = 'flex'; 
-            if(id === 'profileModal') {
-                document.getElementById('pfpPreview').src = myProfile.avatar_url || 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png';
-                document.getElementById('nickInput').value = myProfile.nickname || '';
-            }
-        }
-        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        // 모달 열고 닫기 통합 함수
+        function toggleModal(id, show) { document.getElementById(id).style.display = show ? 'flex' : 'none'; }
 
+        function openProfileEdit() {
+            toggleModal('profileModal', true);
+            document.getElementById('pfpPreview').src = myProfile.avatar_url || defaultPfp;
+            document.getElementById('nickInput').value = myProfile.nickname || '';
+        }
+
+        // 🚀 3. 로그인 & 회원가입 로직
         async function handleAuth(type) {
             const email = document.getElementById('authEmail').value.trim();
             const pw = document.getElementById('authPw').value.trim();
-            if(!email || !pw) return alert("다 써라!");
+            if (!email || !pw) return alert("이메일과 비밀번호를 입력해줘!");
 
-            if(type === 'signup') {
-                const { error } = await _client.auth.signUp({ email, password: pw });
-                if(error) alert(error.message); else alert("가입 성공! 로그인해봐.");
+            if (type === 'signup') {
+                const { data, error } = await _client.auth.signUp({ email, password: pw });
+                if (error) alert("가입 실패: " + error.message);
+                else {
+                    alert("가입 성공! 수퍼베이스 설정 덕분에 바로 로그인될 거야.");
+                    // 가입 성공 후 세션이 바로 생기면 자동으로 onAuthStateChange가 실행됨
+                    toggleModal('authModal', false);
+                }
             } else {
                 const { error } = await _client.auth.signInWithPassword({ email, password: pw });
-                if(error) alert(error.message); else closeModal('authModal');
+                if (error) alert("로그인 실패: " + error.message);
+                else toggleModal('authModal', false);
             }
         }
 
+        // 🚀 4. 프로필 저장 로직 (사진 업로드 포함)
         async function saveProfile() {
             const btn = document.getElementById('saveBtn');
             const nick = document.getElementById('nickInput').value.trim();
             const file = document.getElementById('pfpInput').files[0];
+            if (!nick) return alert("닉네임은 써줘야지!");
+
             btn.disabled = true; btn.innerText = "저장 중...";
-            
             let url = myProfile.avatar_url;
-            if (file) {
-                const path = `pfp_${Date.now()}.${file.name.split('.').pop()}`;
-                const { error: upErr } = await _client.storage.from('avatars').upload(path, file);
-                if (!upErr) {
-                    const { data } = _client.storage.from('avatars').getPublicUrl(path);
-                    url = data.publicUrl;
+
+            try {
+                if (file) {
+                    const path = `pfp_${Date.now()}.${file.name.split('.').pop()}`;
+                    const { error: upErr } = await _client.storage.from('avatars').upload(path, file);
+                    if (upErr) throw upErr;
+                    url = _client.storage.from('avatars').getPublicUrl(path).data.publicUrl;
                 }
+                const { error: dbErr } = await _client.from('profiles').update({ nickname: nick, avatar_url: url }).eq('id', myProfile.id);
+                if (dbErr) throw dbErr;
+
+                alert("프로필 수정 완료! 😎");
+                location.reload();
+            } catch (err) {
+                alert("수정 실패: " + err.message);
+                btn.disabled = false; btn.innerText = "저장하기";
             }
-            await _client.from('profiles').update({ nickname: nick, avatar_url: url }).eq('id', myProfile.id);
-            location.reload();
         }
 
+        // 5. 영상 로드 (검색 기능 포함)
         async function loadVideos(searchQuery = '') {
             const grid = document.getElementById('videoGrid');
-            grid.innerHTML = '<p>로딩 중...</p>';
+            grid.innerHTML = '<p>영상을 불러오는 중...</p>';
             let query = _client.from('posts').select('*, profiles(nickname, avatar_url)').order('created_at', { ascending: false });
             if (searchQuery) query = query.ilike('title', `%${searchQuery}%`);
-            const { data: videos } = await query;
+            
+            const { data: videos, error } = await query;
+            if (error) return grid.innerHTML = `<p style="color:red;">오류: ${error.message}</p>`;
+
             grid.innerHTML = '';
             videos?.forEach(v => {
-                const nick = v.profiles?.nickname || '유튜버';
-                const pfp = v.profiles?.avatar_url || 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png';
+                const nick = v.profiles?.nickname || '탈퇴한 유저';
+                const pfp = v.profiles?.avatar_url || defaultPfp;
                 const div = document.createElement('div');
                 div.className = 'video-card';
                 div.innerHTML = `
