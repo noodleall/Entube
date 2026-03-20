@@ -8,37 +8,36 @@
         :root { --bg-color: #0f0f0f; --text-color: #f1f1f1; --accent: #ff0000; --card-bg: #212121; }
         body { font-family: 'Arial', sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; }
         
-        /* 네비게이션 바 (전 버전 디자인 복구) */
+        /* 네비게이션 바 */
         .navbar { display: flex; justify-content: space-between; align-items: center; padding: 10px 30px; background: var(--bg-color); border-bottom: 1px solid #333; position: sticky; top: 0; z-index: 100; }
         .logo { font-size: 24px; font-weight: bold; cursor: pointer; color: white; }
         .logo span { color: var(--accent); }
         
-        /* 검색창 디자인 복구 */
         .search-box { display: flex; background: #121212; border: 1px solid #303030; border-radius: 20px; overflow: hidden; width: 40%; }
         .search-box input { flex: 1; padding: 10px 15px; background: transparent; border: none; color: white; outline: none; }
-        .search-box button { padding: 10px 20px; background: #222; color: white; border: none; cursor: pointer; border-left: 1px solid #333; }
+        .search-box button { padding: 10px 20px; background: #222; color: white; border: none; cursor: pointer; }
 
-        /* 프로필 칩 */
-        .user-chip { display: flex; align-items: center; gap: 10px; background: #333; padding: 5px 15px; border-radius: 20px; cursor: pointer; border: 1px solid transparent; }
-        .user-chip:hover { border-color: #555; background: #444; }
+        /* 프로필 & 버튼 */
+        .user-chip { display: flex; align-items: center; gap: 10px; background: #333; padding: 5px 15px; border-radius: 20px; cursor: pointer; }
         .user-chip img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: #555; }
+        .btn-auth { background: #3ea6ff; color: black; border: none; padding: 8px 18px; border-radius: 20px; font-weight: bold; cursor: pointer; }
 
-        /* 영상 그리드 (320px 미니멈 디자인) */
+        /* 영상 그리드 */
         .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; padding: 25px; }
         .video-card { background: transparent; border-radius: 12px; overflow: hidden; }
-        .video-card video { width: 100%; aspect-ratio: 16/9; border-radius: 12px; background: #000; transition: transform 0.2s; }
-        .video-card video:hover { transform: scale(1.02); }
-        
+        .video-card video { width: 100%; aspect-ratio: 16/9; border-radius: 12px; background: #000; }
         .v-info { padding: 12px 5px; display: flex; gap: 12px; }
         .v-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: #444; }
-        .v-text p { margin: 0 0 4px 0; font-weight: bold; font-size: 15px; color: white; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+        .v-text p { margin: 0; font-weight: bold; font-size: 15px; color: white; }
         .v-text span { font-size: 13px; color: #aaa; }
 
-        /* 프로필 수정 모달 (다크 테마) */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: var(--card-bg); padding: 30px; border-radius: 15px; width: 320px; text-align: center; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        .modal-content input[type="text"] { width: 90%; padding: 10px; margin: 15px 0; background: #121212; border: 1px solid #444; color: white; border-radius: 5px; }
-        .btn-red { background: var(--accent); color: white; padding: 10px 20px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; width: 100%; }
+        /* 🛠 회원가입/로그인 통합 모달 */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); justify-content: center; align-items: center; z-index: 2000; }
+        .modal-content { background: var(--card-bg); padding: 40px; border-radius: 15px; width: 350px; text-align: center; }
+        .modal-content input { width: 100%; padding: 12px; margin: 10px 0; background: #121212; border: 1px solid #444; color: white; border-radius: 5px; box-sizing: border-box; }
+        .modal-btns { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+        .btn-login { background: white; color: black; padding: 12px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        .btn-signup { background: transparent; color: #3ea6ff; border: 1px solid #3ea6ff; padding: 12px; border-radius: 5px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -53,14 +52,17 @@
 
     <div class="video-grid" id="videoGrid"></div>
 
-    <div id="profileModal" class="modal">
+    <div id="authModal" class="modal">
         <div class="modal-content">
-            <h3 style="margin-top:0;">내 프로필 관리</h3>
-            <img id="myPfpPreview" src="" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 2px solid red; margin-bottom: 15px;">
-            <input type="file" id="pfpInput" accept="image/*" style="font-size: 12px; margin-bottom: 10px; color:#aaa;">
-            <input type="text" id="nickInput" placeholder="닉네임 입력">
-            <button class="btn-red" id="saveBtn" onclick="saveProfile()">프로필 저장</button>
-            <button onclick="closeModal()" style="background:none; border:none; color:#aaa; margin-top:15px; cursor:pointer; text-decoration:underline;">닫기</button>
+            <h2 style="margin-top:0;">Entube 시작하기</h2>
+            <p style="color:#aaa; font-size:14px;">이메일과 비밀번호를 입력하세요.</p>
+            <input type="email" id="authEmail" placeholder="이메일 주소">
+            <input type="password" id="authPw" placeholder="비밀번호 (6자 이상)">
+            <div class="modal-btns">
+                <button class="btn-login" onclick="handleAuth('login')">로그인</button>
+                <button class="btn-signup" onclick="handleAuth('signup')">회원가입</button>
+            </div>
+            <button onclick="closeAuthModal()" style="background:none; border:none; color:#777; margin-top:20px; cursor:pointer;">닫기</button>
         </div>
     </div>
 
@@ -70,15 +72,10 @@
         const _client = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         let myProfile = null;
-        const defaultPfp = 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png';
 
         _client.auth.onAuthStateChange(async (_event, session) => {
             if (session) {
                 const { data } = await _client.from('profiles').select('*').eq('id', session.user.id).single();
-                if (!data) {
-                    await _client.from('profiles').insert([{ id: session.user.id }]);
-                    location.reload();
-                }
                 myProfile = data;
             } else { myProfile = null; }
             updateUI();
@@ -90,40 +87,50 @@
             if (myProfile) {
                 area.innerHTML = `
                     <div style="display:flex; gap:12px; align-items:center;">
-                        <button onclick="location.href='upload.html'" style="background:none; border: 1px solid #444; color:white; padding:7px 15px; border-radius:20px; cursor:pointer; font-weight:bold;">+ 업로드</button>
-                        <div class="user-chip" onclick="openProfileModal()">
-                            <img src="${myProfile.avatar_url || defaultPfp}">
+                        <button onclick="location.href='upload.html'" style="background:none; border: 1px solid #444; color:white; padding:7px 15px; border-radius:20px; cursor:pointer;">+ 업로드</button>
+                        <div class="user-chip" onclick="location.reload()">
+                            <img src="${myProfile.avatar_url || 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png'}">
                             <span>${myProfile.nickname || '익명'}</span>
                         </div>
                         <button onclick="_client.auth.signOut()" style="background:none; border:none; color:#777; cursor:pointer; font-size:12px;">로그아웃</button>
                     </div>`;
             } else {
-                area.innerHTML = `<button onclick="handleLogin()" style="background:#3ea6ff; color:black; border:none; padding:8px 18px; border-radius:20px; font-weight:bold; cursor:pointer;">로그인</button>`;
+                area.innerHTML = `<button class="btn-auth" onclick="openAuthModal()">로그인 / 가입</button>`;
             }
         }
 
-        async function handleLogin() {
-            const email = prompt("이메일:");
-            const pw = prompt("비밀번호(6자이상):");
-            if (email && pw) {
-                const { error } = await _client.auth.signInWithPassword({ email, password: pw });
-                if (error) await _client.auth.signUp({ email, password: pw });
+        // 모달 제어
+        function openAuthModal() { document.getElementById('authModal').style.display = 'flex'; }
+        function closeAuthModal() { document.getElementById('authModal').style.display = 'none'; }
+
+        // 🚀 로그인 & 회원가입 통합 처리
+        async function handleAuth(type) {
+            const email = document.getElementById('authEmail').value.trim();
+            const password = document.getElementById('authPw').value.trim();
+
+            if (!email || !password) return alert("이메일과 비번을 다 써줘!");
+
+            if (type === 'signup') {
+                const { error } = await _client.auth.signUp({ email, password });
+                if (error) alert("가입 실패: " + error.message);
+                else alert("회원가입 성공! 이제 로그인해봐.");
+            } else {
+                const { error } = await _client.auth.signInWithPassword({ email, password });
+                if (error) alert("로그인 실패: " + error.message);
+                else closeAuthModal();
             }
         }
 
         async function loadVideos(searchQuery = '') {
             const grid = document.getElementById('videoGrid');
             grid.innerHTML = '<p>로딩 중...</p>';
-            
             let query = _client.from('posts').select('*, profiles(nickname, avatar_url)').order('created_at', { ascending: false });
             if (searchQuery) query = query.ilike('title', `%${searchQuery}%`);
-            
             const { data: videos } = await query;
             grid.innerHTML = '';
-            
             videos?.forEach(v => {
                 const nick = v.profiles?.nickname || '유튜버';
-                const pfp = v.profiles?.avatar_url || defaultPfp;
+                const pfp = v.profiles?.avatar_url || 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png';
                 const div = document.createElement('div');
                 div.className = 'video-card';
                 div.innerHTML = `
@@ -135,33 +142,7 @@
                 grid.appendChild(div);
             });
         }
-
         function searchVideos() { loadVideos(document.getElementById('searchInput').value); }
-        function openProfileModal() {
-            document.getElementById('profileModal').style.display = 'flex';
-            document.getElementById('myPfpPreview').src = myProfile.avatar_url || defaultPfp;
-            document.getElementById('nickInput').value = myProfile.nickname || '';
-        }
-        function closeModal() { document.getElementById('profileModal').style.display = 'none'; }
-
-        async function saveProfile() {
-            const btn = document.getElementById('saveBtn');
-            const nick = document.getElementById('nickInput').value.trim();
-            const file = document.getElementById('pfpInput').files[0];
-            if(!nick) return alert("닉네임 써줘!");
-            
-            btn.disabled = true; btn.innerText = "저장 중...";
-            let url = myProfile.avatar_url;
-
-            if (file) {
-                const path = `${myProfile.id}/${Date.now()}.${file.name.split('.').pop()}`;
-                await _client.storage.from('avatars').upload(path, file);
-                url = _client.storage.from('avatars').getPublicUrl(path).data.publicUrl;
-            }
-
-            await _client.from('profiles').update({ nickname: nick, avatar_url: url }).eq('id', myProfile.id);
-            location.reload();
-        }
     </script>
 </body>
 </html>
