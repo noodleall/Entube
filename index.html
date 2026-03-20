@@ -10,70 +10,149 @@
         .navbar { display: flex; justify-content: space-between; align-items: center; padding: 10px 30px; background: var(--bg-color); border-bottom: 1px solid #333; position: sticky; top: 0; z-index: 100; }
         .logo { font-size: 24px; font-weight: bold; cursor: pointer; color: white; }
         .logo span { color: var(--accent); }
-        .user-chip { display: flex; align-items: center; gap: 10px; background: #333; padding: 5px 15px; border-radius: 20px; cursor: pointer; }
-        .user-chip img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
+        
+        /* 닉네임 칩 디자인 */
+        .user-chip { display: flex; align-items: center; gap: 10px; background: #333; padding: 5px 15px; border-radius: 20px; cursor: pointer; transition: 0.3s; }
+        .user-chip:hover { background: #444; }
+        .user-chip img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: #555; }
+
         .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding: 20px; }
-        .video-card { background: var(--card-bg); border-radius: 12px; overflow: hidden; }
+        .video-card { background: var(--card-bg); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .video-card video { width: 100%; aspect-ratio: 16/9; background: #000; }
         .v-info { padding: 15px; display: flex; gap: 12px; }
         .v-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: #444; }
-        .v-text p { margin: 0; font-weight: bold; }
+        .v-text p { margin: 0; font-weight: bold; font-size: 15px; }
         .v-text span { font-size: 13px; color: #aaa; }
+
+        /* 프로필 수정 모달 */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: var(--card-bg); padding: 30px; border-radius: 20px; width: 320px; text-align: center; }
+        .modal-content h3 { margin-top: 0; }
+        .pfp-preview-container { position: relative; width: 100px; height: 100px; margin: 0 auto 20px; }
+        #myPfpPreview { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid var(--accent); }
+        input[type="text"] { width: 90%; padding: 12px; margin: 10px 0; background: #121212; border: 1px solid #444; color: white; border-radius: 8px; text-align: center; }
+        input[type="file"] { font-size: 12px; margin-bottom: 20px; color: #aaa; }
+        .btn-save { width: 100%; padding: 12px; background: var(--accent); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .btn-close { margin-top: 15px; background: none; border: none; color: #aaa; cursor: pointer; font-size: 14px; text-decoration: underline; }
     </style>
 </head>
 <body>
     <nav class="navbar">
         <div class="logo" onclick="location.reload()">▶ <span>Entube</span></div>
         <div id="authSection">
-            <button onclick="handleLogin()" style="background:white; color:black; padding:8px 16px; border-radius:20px; border:none; font-weight:bold; cursor:pointer;">로그인 / 가입</button>
+            <button onclick="handleLogin()" style="background:white; border:none; padding:8px 16px; border-radius:20px; font-weight:bold; cursor:pointer;">로그인</button>
         </div>
     </nav>
 
-    <div class="video-grid" id="videoGrid">
-        <p style="padding:20px;">데이터를 연결하는 중입니다...</p>
+    <div class="video-grid" id="videoGrid"></div>
+
+    <div id="profileModal" class="modal">
+        <div class="modal-content">
+            <h3>내 프로필 수정</h3>
+            <div class="pfp-preview-container">
+                <img id="myPfpPreview" src="">
+            </div>
+            <p style="font-size:12px; color:#aaa;">새 프사 선택 👇</p>
+            <input type="file" id="pfpInput" accept="image/*">
+            <input type="text" id="nickInput" placeholder="닉네임 입력">
+            <button class="btn-save" id="saveBtn" onclick="saveProfile()">저장하기</button>
+            <button class="btn-close" onclick="closeModal()">그냥 닫기</button>
+        </div>
     </div>
 
     <script>
-        // 🚨 빤쭌아, 이 주소랑 키가 내 수퍼베이스 대시보드랑 똑같은지 한 번만 더 봐줘!
         const supabaseUrl = 'https://kzchubdwrkcpmuempgrg.supabase.co';
         const supabaseKey = 'sb_publishable_MyFF5Xln3fWLvTqMx2CFNA_obZtoask'; 
         const _client = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         let myProfile = null;
+        const defaultPfp = 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png';
 
-        // 에러가 나도 화면이 멈추지 않게 감싸줌
-        async function init() {
-            try {
-                const { data: { session } } = await _client.auth.getSession();
-                if (session) {
-                    const { data } = await _client.from('profiles').select('*').eq('id', session.user.id).single();
+        // 1. 로그인 상태 확인 및 프로필 가져오기
+        _client.auth.onAuthStateChange(async (_event, session) => {
+            if (session) {
+                const { data } = await _client.from('profiles').select('*').eq('id', session.user.id).single();
+                if (!data) {
+                    // 프로필 없으면 생성
+                    const { data: newProf } = await _client.from('profiles').insert([{ id: session.user.id }]).select().single();
+                    myProfile = newProf;
+                } else {
                     myProfile = data;
                 }
-                updateUI();
-                loadVideos();
-            } catch (err) {
-                console.error("초기화 에러:", err);
-                updateUI(); // 에러 나도 로그인 버튼은 보여줌
-            }
-        }
+            } else { myProfile = null; }
+            updateUI();
+            loadVideos();
+        });
 
+        // 2. 상단 UI 업데이트 (내 닉네임/프사 보여주기)
         function updateUI() {
             const area = document.getElementById('authSection');
             if (myProfile) {
                 area.innerHTML = `
-                    <div style="display:flex; gap:10px; align-items:center;">
-                        <button onclick="location.href='upload.html'" style="background:red; color:white; border:none; padding:8px 15px; border-radius:15px; cursor:pointer;">+ 업로드</button>
-                        <div class="user-chip">
-                            <img src="${myProfile.avatar_url || ''}">
+                    <div style="display:flex; gap:12px; align-items:center;">
+                        <button onclick="location.href='upload.html'" style="background:red; color:white; border:none; padding:8px 15px; border-radius:15px; cursor:pointer; font-weight:bold;">+ 업로드</button>
+                        <div class="user-chip" onclick="openProfileModal()">
+                            <img src="${myProfile.avatar_url || defaultPfp}">
                             <span>${myProfile.nickname || '익명'}</span>
                         </div>
-                        <button onclick="logout()" style="background:none; border:none; color:#aaa; cursor:pointer;">로그아웃</button>
+                        <button onclick="_client.auth.signOut()" style="background:none; border:none; color:#777; cursor:pointer; font-size:12px;">로그아웃</button>
                     </div>`;
             }
         }
 
-        async function logout() { await _client.auth.signOut(); location.reload(); }
+        // 3. 프로필 수정 모달 열기/닫기
+        function openProfileModal() {
+            document.getElementById('profileModal').style.display = 'flex';
+            document.getElementById('myPfpPreview').src = myProfile.avatar_url || defaultPfp;
+            document.getElementById('nickInput').value = myProfile.nickname || '';
+        }
+        function closeModal() { document.getElementById('profileModal').style.display = 'none'; }
 
+        // 🚀 4. 프로필 저장 로직 (핵심!)
+        async function saveProfile() {
+            const saveBtn = document.getElementById('saveBtn');
+            const nick = document.getElementById('nickInput').value.trim();
+            const file = document.getElementById('pfpInput').files[0];
+            
+            if (!nick) return alert("닉네임을 입력해줘!");
+            
+            saveBtn.disabled = true;
+            saveBtn.innerText = "저장 중...";
+
+            let finalUrl = myProfile.avatar_url;
+
+            try {
+                // 사진을 선택했다면 스토리지에 업로드
+                if (file) {
+                    const fileExt = file.name.split('.').pop();
+                    const fileName = `${myProfile.id}/${Date.now()}.${fileExt}`; // 유저ID별 폴더 생성
+                    
+                    const { data, error: upError } = await _client.storage.from('avatars').upload(fileName, file);
+                    if (upError) throw upError;
+
+                    const { data: { publicUrl } } = _client.storage.from('avatars').getPublicUrl(fileName);
+                    finalUrl = publicUrl;
+                }
+
+                // DB 업데이트
+                const { error: dbError } = await _client.from('profiles').update({
+                    nickname: nick,
+                    avatar_url: finalUrl
+                }).eq('id', myProfile.id);
+
+                if (dbError) throw dbError;
+
+                alert("프로필 수정 완료! 😎");
+                location.reload();
+
+            } catch (err) {
+                alert("수정 실패: " + err.message);
+                saveBtn.disabled = false;
+                saveBtn.innerText = "저장하기";
+            }
+        }
+
+        // 5. 로그인 처리
         async function handleLogin() {
             const email = prompt("이메일:");
             const pw = prompt("비밀번호(6자이상):");
@@ -84,40 +163,26 @@
             }
         }
 
+        // 6. 영상 목록 불러오기 (닉네임/프사 연동)
         async function loadVideos() {
             const grid = document.getElementById('videoGrid');
-            try {
-                // ⚠️ 여기서 에러가 많이 남 (테이블 연결 문제)
-                const { data: videos, error } = await _client.from('posts').select('*, profiles(nickname, avatar_url)');
-                
-                if (error) throw error;
-
-                grid.innerHTML = '';
-                if (!videos || videos.length === 0) {
-                    grid.innerHTML = '<p>아직 영상이 없습니다. 첫 영상을 올려보세요!</p>';
-                    return;
-                }
-
-                videos.forEach(v => {
-                    const nick = v.profiles?.nickname || '유튜버';
-                    const pfp = v.profiles?.avatar_url || '';
-                    const div = document.createElement('div');
-                    div.className = 'video-card';
-                    div.innerHTML = `
-                        <video src="${v.video_url}" controls></video>
-                        <div class="v-info">
-                            <img src="${pfp}" class="v-avatar">
-                            <div class="v-text"><p>${v.title}</p><span>${nick}</span></div>
-                        </div>`;
-                    grid.appendChild(div);
-                });
-            } catch (err) {
-                console.error("영상 로드 에러:", err);
-                grid.innerHTML = `<p style="color:red;">영상을 불러오지 못했습니다. (SQL 에러일 확률 99%)</p>`;
-            }
+            const { data: videos } = await _client.from('posts').select('*, profiles(nickname, avatar_url)').order('created_at', { ascending: false });
+            
+            grid.innerHTML = '';
+            videos?.forEach(v => {
+                const nick = v.profiles?.nickname || '유튜버';
+                const pfp = v.profiles?.avatar_url || defaultPfp;
+                const card = document.createElement('div');
+                card.className = 'video-card';
+                card.innerHTML = `
+                    <video src="${v.video_url}" controls></video>
+                    <div class="v-info">
+                        <img src="${pfp}" class="v-avatar">
+                        <div class="v-text"><p>${v.title}</p><span>${nick}</span></div>
+                    </div>`;
+                grid.appendChild(card);
+            });
         }
-
-        init();
     </script>
 </body>
 </html>
