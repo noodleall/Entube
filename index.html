@@ -31,7 +31,7 @@
         .v-text p { margin: 0; font-weight: bold; font-size: 15px; color: white; }
         .v-text span { font-size: 13px; color: #aaa; }
 
-        /* 🔐 모달 스타일 (로그인/회원가입/프로필 통합) */
+        /* 🔐 모달 스타일 */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); justify-content: center; align-items: center; z-index: 2000; }
         .modal-content { background: var(--card-bg); padding: 30px; border-radius: 15px; width: 320px; text-align: center; }
         .modal-content input { width: 100%; padding: 12px; margin: 10px 0; background: #121212; border: 1px solid #444; color: white; border-radius: 5px; box-sizing: border-box; }
@@ -99,7 +99,7 @@
                 area.innerHTML = `
                     <div style="display:flex; gap:10px; align-items:center;">
                         <button onclick="location.href='upload.html'" style="background:none; border: 1px solid #444; color:white; padding:7px 15px; border-radius:20px; cursor:pointer;">+ 업로드</button>
-                        <div class="user-chip" onclick="openProfileModal()">
+                        <div class="user-chip" onclick="openModal('profileModal')">
                             <img src="${myProfile.avatar_url || 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png'}">
                             <span>${myProfile.nickname || '익명'}</span>
                         </div>
@@ -113,7 +113,7 @@
         function openModal(id) { 
             document.getElementById(id).style.display = 'flex'; 
             if(id === 'profileModal') {
-                document.getElementById('pfpPreview').src = myProfile.avatar_url || '';
+                document.getElementById('pfpPreview').src = myProfile.avatar_url || 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png';
                 document.getElementById('nickInput').value = myProfile.nickname || '';
             }
         }
@@ -142,8 +142,11 @@
             let url = myProfile.avatar_url;
             if (file) {
                 const path = `pfp_${Date.now()}.${file.name.split('.').pop()}`;
-                await _client.storage.from('avatars').upload(path, file);
-                url = _client.storage.from('avatars').getPublicUrl(path).data.publicUrl;
+                const { error: upErr } = await _client.storage.from('avatars').upload(path, file);
+                if (!upErr) {
+                    const { data } = _client.storage.from('avatars').getPublicUrl(path);
+                    url = data.publicUrl;
+                }
             }
             await _client.from('profiles').update({ nickname: nick, avatar_url: url }).eq('id', myProfile.id);
             location.reload();
