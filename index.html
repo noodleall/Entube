@@ -27,7 +27,6 @@
         .sub-btn { padding: 4px 10px; background: white; color: black; border: none; border-radius: 15px; cursor: pointer; font-size: 12px; }
         .sub-btn.subscribed { background: #444; color: white; }
         
-        /* 모달 디자인 */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: var(--card-bg); padding: 30px; border-radius: 10px; width: 300px; display: flex; flex-direction: column; gap: 15px; position: relative; }
         .modal-content input { padding: 10px; border-radius: 5px; border: 1px solid #444; background: #121212; color: white; }
@@ -61,37 +60,35 @@
     </div>
 
     <script>
-        // 🚨 여기에 본인의 ANON_KEY를 꼭 넣어주세요! (URL은 맞춰두었습니다)
+        // 🚨 충돌을 막기 위해 이름을 supabaseClient로 변경했습니다!
         const supabaseUrl = 'https://kzchubdwrkcpmuempgrg.supabase.co';
         const supabaseKey = 'sb_publishable_MyFF5Xln3fWLvTqMx2CFNA_obZtoask';
-        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
         
         let currentUser = null;
 
-        // 🛡️ XSS 방어 (해킹 방지)
         function escapeHTML(str) {
             if (!str) return '';
             return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
         }
 
-        // 인증 상태 확인
-        supabase.auth.getSession().then(({ data: { session } }) => updateUI(session));
-        supabase.auth.onAuthStateChange((_event, session) => { updateUI(session); loadVideos(); });
+        // 인증 상태 확인 (supabaseClient 로 변경)
+        supabaseClient.auth.getSession().then(({ data: { session } }) => updateUI(session));
+        supabaseClient.auth.onAuthStateChange((_event, session) => { updateUI(session); loadVideos(); });
 
         function updateUI(session) {
             const authSection = document.getElementById('authSection');
             if (session) {
                 currentUser = session.user;
                 authSection.innerHTML = `
-                    <button class="btn btn-upload" onclick="location.href='record.html'">+ 영상 올리기</button>
-                    <button class="btn btn-outline" onclick="supabase.auth.signOut()">로그아웃</button>`;
+                    <button class="btn btn-upload" onclick="location.href='upload.html'">+ 영상 올리기</button>
+                    <button class="btn btn-outline" onclick="supabaseClient.auth.signOut()">로그아웃</button>`;
             } else {
                 currentUser = null;
                 authSection.innerHTML = `<button class="btn btn-outline" onclick="openModal()">로그인</button>`;
             }
         }
 
-        // 로그인/회원가입 처리
         async function handleAuth(action) {
             const email = document.getElementById('emailInput').value;
             const password = document.getElementById('pwInput').value;
@@ -101,8 +98,8 @@
             msg.innerText = "처리 중...";
             
             const { error } = action === 'signup' 
-                ? await supabase.auth.signUp({ email, password }) 
-                : await supabase.auth.signInWithPassword({ email, password });
+                ? await supabaseClient.auth.signUp({ email, password }) 
+                : await supabaseClient.auth.signInWithPassword({ email, password });
             
             if (error) msg.innerText = error.message;
             else { msg.innerText = ""; closeModal(); }
@@ -111,12 +108,11 @@
         function openModal() { document.getElementById('loginModal').style.display = 'flex'; }
         function closeModal() { document.getElementById('loginModal').style.display = 'none'; }
 
-        // 🎬 영상 목록 불러오기 (UI 생성)
         async function loadVideos(searchQuery = '') {
             const videoGrid = document.getElementById('videoGrid');
             videoGrid.innerHTML = '<p style="color:#aaa;">영상을 불러오는 중...</p>';
 
-            let query = supabase.from('posts').select('*').order('created_at', { ascending: false });
+            let query = supabaseClient.from('posts').select('*').order('created_at', { ascending: false });
             if (searchQuery) query = query.ilike('title', `%${searchQuery}%`);
 
             const { data: videos, error } = await query;
@@ -162,48 +158,45 @@
             });
         }
 
-        // 검색
         function searchVideos() { loadVideos(document.getElementById('searchInput').value); }
         document.getElementById('searchInput').addEventListener('keypress', e => { if (e.key === 'Enter') searchVideos(); });
 
-        // 구독 로직
         async function toggleSubscribe(targetId) {
             if (!currentUser) return openModal();
             if (currentUser.id === targetId) return alert("자신의 채널은 구독할 수 없습니다.");
 
             const btn = document.getElementById(`subBtn_${targetId}`);
             if (btn.classList.contains('subscribed')) {
-                await supabase.from('subscriptions').delete().match({ follower_id: currentUser.id, followed_id: targetId });
+                await supabaseClient.from('subscriptions').delete().match({ follower_id: currentUser.id, followed_id: targetId });
                 btn.classList.remove('subscribed'); btn.innerText = '구독';
             } else {
-                await supabase.from('subscriptions').insert([{ follower_id: currentUser.id, followed_id: targetId }]);
+                await supabaseClient.from('subscriptions').insert([{ follower_id: currentUser.id, followed_id: targetId }]);
                 btn.classList.add('subscribed'); btn.innerText = '구독중';
             }
         }
 
         async function checkSub(targetId) {
-            const { data } = await supabase.from('subscriptions').select('*').match({ follower_id: currentUser.id, followed_id: targetId });
+            const { data } = await supabaseClient.from('subscriptions').select('*').match({ follower_id: currentUser.id, followed_id: targetId });
             if (data && data.length > 0) {
                 const btn = document.getElementById(`subBtn_${targetId}`);
                 if(btn) { btn.classList.add('subscribed'); btn.innerText = '구독중'; }
             }
         }
 
-        // ❤️ 좋아요 로직
         async function toggleLike(postId) {
             if (!currentUser) return openModal();
-            const { data } = await supabase.from('likes').select('*').match({ user_id: currentUser.id, post_id: postId });
+            const { data } = await supabaseClient.from('likes').select('*').match({ user_id: currentUser.id, post_id: postId });
             
             if (data && data.length > 0) {
-                await supabase.from('likes').delete().match({ user_id: currentUser.id, post_id: postId });
+                await supabaseClient.from('likes').delete().match({ user_id: currentUser.id, post_id: postId });
             } else {
-                await supabase.from('likes').insert([{ user_id: currentUser.id, post_id: postId }]);
+                await supabaseClient.from('likes').insert([{ user_id: currentUser.id, post_id: postId }]);
             }
             loadLikes(postId);
         }
 
         async function loadLikes(postId) {
-            const { data, count } = await supabase.from('likes').select('*', { count: 'exact' }).match({ post_id: postId });
+            const { data, count } = await supabaseClient.from('likes').select('*', { count: 'exact' }).match({ post_id: postId });
             document.getElementById(`likeCount_${postId}`).innerText = count || 0;
             const btn = document.getElementById(`likeBtn_${postId}`);
             
@@ -214,20 +207,19 @@
             }
         }
 
-        // 💬 댓글 로직
         async function addComment(postId) {
             if (!currentUser) return openModal();
             const input = document.getElementById(`commentInput_${postId}`);
             const content = input.value.trim();
             if (!content) return;
 
-            const { error } = await supabase.from('comments').insert([{ user_id: currentUser.id, post_id: postId, content: content }]);
+            const { error } = await supabaseClient.from('comments').insert([{ user_id: currentUser.id, post_id: postId, content: content }]);
             if (!error) { input.value = ''; loadComments(postId); }
         }
 
         async function loadComments(postId) {
             const listDiv = document.getElementById(`commentList_${postId}`);
-            const { data: comments } = await supabase.from('comments').select('*').match({ post_id: postId }).order('created_at', { ascending: false });
+            const { data: comments } = await supabaseClient.from('comments').select('*').match({ post_id: postId }).order('created_at', { ascending: false });
 
             if (!comments || comments.length === 0) return listDiv.innerHTML = '댓글이 없습니다.';
             
