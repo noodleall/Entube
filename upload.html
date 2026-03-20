@@ -7,9 +7,9 @@
     <style>
         body { font-family: 'Arial', sans-serif; background: #0f0f0f; color: white; display: flex; flex-direction: column; align-items: center; padding: 50px; }
         .box { background: #212121; padding: 40px; border-radius: 12px; width: 100%; max-width: 500px; text-align: center; }
-        input { width: 100%; padding: 10px; margin: 10px 0; background: #121212; border: 1px solid #444; color: white; }
-        button { width: 100%; padding: 15px; background: #ff0000; border: none; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        #preview { width: 100%; margin: 20px 0; display: none; }
+        input { width: 100%; padding: 10px; margin: 10px 0; background: #121212; border: 1px solid #444; color: white; border-radius: 5px; }
+        button { width: 100%; padding: 15px; background: #ff0000; border: none; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; border-radius: 5px; }
+        #preview { width: 100%; margin: 20px 0; display: none; border-radius: 8px; }
     </style>
 </head>
 <body>
@@ -20,12 +20,12 @@
         <video id="preview" controls></video>
         <button id="upBtn">업로드 시작</button>
         <p id="st">파일을 선택해주세요.</p>
-        <a href="index.html" style="color:#aaa; text-decoration:none; font-size:14px;">← 돌아가기</a>
+        <a href="index.html" style="color:#aaa; text-decoration:none; font-size:14px; display:block; margin-top:15px;">← 메인으로 돌아가기</a>
     </div>
 
     <script>
         const supabaseUrl = 'https://kzchubdwrkcpmuempgrg.supabase.co';
-        const supabaseKey = 'sb_publishable_MyFF5Xln3fWLvTqMx2CFNA_obZtoask'; 
+        const supabaseKey = 'sb_publishable_MyFF5Xln3fWLvTqMx2CFNA_obZtoask'; // 👈 빤쭌아, 여기 키 꼭 확인해!
         const _client = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         const fileIn = document.getElementById('file');
@@ -35,28 +35,46 @@
 
         fileIn.onchange = (e) => {
             const file = e.target.files[0];
-            if(file) { pre.src = URL.createObjectURL(file); pre.style.display = 'block'; st.innerText = "준비 완료!"; }
+            if(file) { pre.src = URL.createObjectURL(file); pre.style.display = 'block'; st.innerText = "업로드 준비 완료!"; }
         };
 
         btn.onclick = async () => {
             const { data: { session } } = await _client.auth.getSession();
-            if(!session) return alert("로그인 필요!");
+            if(!session) return alert("로그인이 필요합니다!");
             
             const file = fileIn.files[0];
             const title = document.getElementById('title').value;
-            if(!file || !title) return alert("제목과 파일을 확인하세요!");
+            if(!file || !title) return alert("제목과 파일을 모두 입력해주세요!");
 
-            btn.disabled = true; st.innerText = "⏳ 업로드 중...";
+            btn.disabled = true; 
+            st.innerText = "⏳ 서버로 전송 중... (잠시만 기다려주세요)";
             
-            const fileName = `${Date.now()}_${file.name}`;
-            const { error: sErr } = await _client.storage.from('videos').upload(fileName, file);
-            if(sErr) { alert(sErr.message); btn.disabled = false; return; }
+            try {
+                // 🛡️ [핵심 수정] 파일명을 무조건 안전하게 변환
+                const ext = file.name.split('.').pop();
+                const safeName = `v_${Date.now()}.${ext}`;
 
-            const { data: { publicUrl } } = _client.storage.from('videos').getPublicUrl(fileName);
-            await _client.from('posts').insert([{ title, video_url: publicUrl, author_id: session.user.id }]);
+                // 1. Storage 업로드
+                const { error: sErr } = await _client.storage.from('videos').upload(safeName, file);
+                if(sErr) throw sErr;
 
-            st.innerText = "✅ 성공! 잠시 후 이동합니다.";
-            setTimeout(() => location.href = 'index.html', 2000);
+                // 2. URL 가져오기
+                const { data: { publicUrl } } = _client.storage.from('videos').getPublicUrl(safeName);
+
+                // 3. DB 저장
+                const { error: dErr } = await _client.from('posts').insert([
+                    { title: title, video_url: publicUrl, author_id: session.user.id }
+                ]);
+                if(dErr) throw dErr;
+
+                st.innerText = "✅ 업로드 성공! 메인으로 이동합니다.";
+                setTimeout(() => location.href = 'index.html', 1500);
+
+            } catch (err) {
+                alert("에러 발생: " + err.message);
+                btn.disabled = false;
+                st.innerText = "❌ 다시 시도해주세요.";
+            }
         };
     </script>
 </body>
