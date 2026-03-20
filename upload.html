@@ -2,113 +2,61 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Entube - 파일 업로드</title>
+    <title>Entube - 업로드</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: 'Arial', sans-serif; background: #0f0f0f; color: #f1f1f1; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
-        .upload-container { width: 100%; max-width: 600px; background: #212121; padding: 40px; border-radius: 12px; margin-top: 50px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        .home-btn { color: #3ea6ff; text-decoration: none; font-weight: bold; }
-        input[type="text"] { width: 95%; padding: 15px; margin-bottom: 20px; background: #121212; border: 1px solid #444; color: white; border-radius: 8px; font-size: 16px; outline: none; }
-        input[type="file"] { margin-bottom: 20px; color: #aaa; }
-        #preview { width: 100%; border-radius: 8px; background: #000; margin-bottom: 20px; aspect-ratio: 16/9; display: none; object-fit: contain; }
-        button { width: 100%; padding: 15px; font-size: 16px; font-weight: bold; background: #ff0000; color: white; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s; }
-        button:hover { background: #cc0000; }
-        button:disabled { background: #444; color: #888; cursor: not-allowed; }
-        #status { margin-top: 20px; text-align: center; color: #aaa; font-size: 14px; }
+        body { font-family: 'Arial', sans-serif; background: #0f0f0f; color: white; display: flex; flex-direction: column; align-items: center; padding: 50px; }
+        .box { background: #212121; padding: 40px; border-radius: 12px; width: 100%; max-width: 500px; text-align: center; }
+        input { width: 100%; padding: 10px; margin: 10px 0; background: #121212; border: 1px solid #444; color: white; }
+        button { width: 100%; padding: 15px; background: #ff0000; border: none; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        #preview { width: 100%; margin: 20px 0; display: none; }
     </style>
 </head>
 <body>
-
-    <div class="upload-container">
-        <div class="header">
-            <h2 style="margin:0;">🎬 Entube 영상 업로드</h2>
-            <a href="index.html" class="home-btn">← 메인으로</a>
-        </div>
-
-        <input type="text" id="videoTitle" placeholder="영상 제목을 입력하세요">
-        <input type="file" id="videoFile" accept="video/*">
+    <div class="box">
+        <h2>🎬 영상 업로드</h2>
+        <input type="text" id="title" placeholder="영상 제목을 입력하세요">
+        <input type="file" id="file" accept="video/*">
         <video id="preview" controls></video>
-
-        <button id="uploadBtn">서버에 업로드 하기</button>
-        <p id="status">동영상 파일을 선택하고 업로드 버튼을 눌러주세요.</p>
+        <button id="upBtn">업로드 시작</button>
+        <p id="st">파일을 선택해주세요.</p>
+        <a href="index.html" style="color:#aaa; text-decoration:none; font-size:14px;">← 돌아가기</a>
     </div>
 
     <script>
         const supabaseUrl = 'https://kzchubdwrkcpmuempgrg.supabase.co';
-        // 🚨 여기에 대시보드에서 복사한 'ey...'로 시작하는 긴 키를 넣어주세요!
         const supabaseKey = 'sb_publishable_MyFF5Xln3fWLvTqMx2CFNA_obZtoask'; 
-        const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
-        
-        let currentUser = null;
+        const _client = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        // 로그인 상태 체크
-        supabaseClient.auth.getSession().then(({ data: { session } }) => {
-            if (!session) {
-                alert("영상을 올리려면 로그인이 필요합니다!");
-                window.location.href = 'index.html'; 
-            } else {
-                currentUser = session.user;
-            }
-        });
+        const fileIn = document.getElementById('file');
+        const pre = document.getElementById('preview');
+        const btn = document.getElementById('upBtn');
+        const st = document.getElementById('st');
 
-        const videoFileInput = document.getElementById('videoFile');
-        const previewVideo = document.getElementById('preview');
-        const uploadBtn = document.getElementById('uploadBtn');
-        const statusText = document.getElementById('status');
-        const titleInput = document.getElementById('videoTitle');
-
-        let selectedFile = null;
-
-        videoFileInput.addEventListener('change', function(e) {
+        fileIn.onchange = (e) => {
             const file = e.target.files[0];
-            if (file) {
-                selectedFile = file;
-                const fileURL = URL.createObjectURL(file);
-                previewVideo.src = fileURL;
-                previewVideo.style.display = 'block';
-                statusText.innerText = "파일이 선택되었습니다. 제목을 적고 업로드해주세요.";
-            }
-        });
+            if(file) { pre.src = URL.createObjectURL(file); pre.style.display = 'block'; st.innerText = "준비 완료!"; }
+        };
 
-        uploadBtn.onclick = async () => {
-            const title = titleInput.value.trim();
-            if (!title) return alert("영상 제목을 입력해주세요!");
-            if (!selectedFile) return alert("업로드할 동영상 파일을 선택해주세요!");
+        btn.onclick = async () => {
+            const { data: { session } } = await _client.auth.getSession();
+            if(!session) return alert("로그인 필요!");
+            
+            const file = fileIn.files[0];
+            const title = document.getElementById('title').value;
+            if(!file || !title) return alert("제목과 파일을 확인하세요!");
 
-            uploadBtn.disabled = true;
-            statusText.innerText = "⏳ 업로드 중...";
+            btn.disabled = true; st.innerText = "⏳ 업로드 중...";
+            
+            const fileName = `${Date.now()}_${file.name}`;
+            const { error: sErr } = await _client.storage.from('videos').upload(fileName, file);
+            if(sErr) { alert(sErr.message); btn.disabled = false; return; }
 
-            try {
-                const fileExtension = selectedFile.name.split('.').pop();
-                const safeFileName = `${currentUser.id}_${Date.now()}.${fileExtension}`;
+            const { data: { publicUrl } } = _client.storage.from('videos').getPublicUrl(fileName);
+            await _client.from('posts').insert([{ title, video_url: publicUrl, author_id: session.user.id }]);
 
-                // Storage 업로드
-                const { error: storageError } = await supabaseClient.storage
-                    .from('videos')
-                    .upload(safeFileName, selectedFile);
-
-                if (storageError) throw storageError;
-
-                // URL 가져오기
-                const { data: publicUrlData } = supabaseClient.storage
-                    .from('videos')
-                    .getPublicUrl(safeFileName);
-                
-                // DB 저장
-                const { error: dbError } = await supabaseClient.from('posts').insert([
-                    { title: title, video_url: publicUrlData.publicUrl, author_id: currentUser.id }
-                ]);
-
-                if (dbError) throw dbError;
-
-                statusText.innerText = "✅ 업로드 성공!";
-                setTimeout(() => { window.location.href = 'index.html'; }, 2000);
-
-            } catch (error) {
-                statusText.innerText = "❌ 실패: " + error.message;
-                uploadBtn.disabled = false;
-            }
+            st.innerText = "✅ 성공! 잠시 후 이동합니다.";
+            setTimeout(() => location.href = 'index.html', 2000);
         };
     </script>
 </body>
