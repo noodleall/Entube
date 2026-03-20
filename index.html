@@ -7,232 +7,136 @@
     <style>
         :root { --bg-color: #0f0f0f; --text-color: #f1f1f1; --accent: #ff0000; --card-bg: #212121; }
         body { font-family: 'Arial', sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; }
-        .navbar { display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: var(--bg-color); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #333; }
+        .navbar { display: flex; justify-content: space-between; align-items: center; padding: 10px 30px; background: var(--bg-color); border-bottom: 1px solid #333; position: sticky; top: 0; z-index: 100; }
         .logo { font-size: 24px; font-weight: bold; cursor: pointer; color: white; }
         .logo span { color: var(--accent); }
-        .search-box { display: flex; background: #121212; border: 1px solid #303030; border-radius: 20px; overflow: hidden; width: 40%; }
-        .search-box input { flex: 1; padding: 10px; background: transparent; border: none; color: white; outline: none; }
-        .search-box button { padding: 10px 20px; background: #222; color: white; border: none; cursor: pointer; }
-        .nav-buttons { display: flex; gap: 10px; }
-        .btn { padding: 8px 16px; border-radius: 18px; font-weight: bold; cursor: pointer; border: none; }
-        .btn-primary { background: white; color: black; }
-        .btn-outline { background: transparent; color: #3ea6ff; border: 1px solid #3ea6ff; }
-        .btn-upload { background: var(--accent); color: white; }
-        .container { padding: 30px; }
-        .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
-        .video-card { background: var(--card-bg); padding: 15px; border-radius: 12px; display: flex; flex-direction: column; gap: 10px; }
-        .video-card video { width: 100%; aspect-ratio: 16/9; border-radius: 8px; background: #000; }
-        .video-info p { margin: 0 0 5px 0; font-weight: bold; font-size: 16px; }
-        .video-author { color: #aaa; font-size: 14px; }
-        .sub-btn { padding: 4px 10px; background: white; color: black; border: none; border-radius: 15px; cursor: pointer; font-size: 12px; }
-        .sub-btn.subscribed { background: #444; color: white; }
-        
+        .user-chip { display: flex; align-items: center; gap: 10px; background: #333; padding: 5px 15px; border-radius: 20px; cursor: pointer; }
+        .user-chip img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
+        .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding: 20px; }
+        .video-card { background: var(--card-bg); border-radius: 12px; overflow: hidden; }
+        .video-card video { width: 100%; aspect-ratio: 16/9; background: #000; }
+        .v-info { padding: 15px; display: flex; gap: 12px; }
+        .v-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: #444; }
+        .v-text p { margin: 0; font-weight: bold; }
+        .v-text span { font-size: 13px; color: #aaa; }
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: var(--card-bg); padding: 30px; border-radius: 10px; width: 300px; display: flex; flex-direction: column; gap: 15px; position: relative; }
-        .modal-content input { padding: 10px; border-radius: 5px; border: 1px solid #444; background: #121212; color: white; }
-        .close-btn { position: absolute; top: 10px; right: 15px; cursor: pointer; font-size: 20px; }
+        .modal-content { background: var(--card-bg); padding: 30px; border-radius: 15px; width: 320px; text-align: center; }
+        input { width: 90%; padding: 10px; margin: 10px 0; background: #121212; border: 1px solid #444; color: white; }
+        button { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; }
+        .btn-red { background: var(--accent); color: white; width: 100%; margin-top: 10px; }
     </style>
 </head>
 <body>
     <nav class="navbar">
-        <div class="logo" onclick="loadVideos()">▶ <span>Entube</span></div>
-        <div class="search-box">
-            <input type="text" id="searchInput" placeholder="영상 검색">
-            <button onclick="searchVideos()">🔍</button>
-        </div>
-        <div class="nav-buttons" id="authSection"></div>
+        <div class="logo" onclick="location.reload()">▶ <span>Entube</span></div>
+        <div id="authSection"></div>
     </nav>
 
-    <div class="container">
-        <div id="videoGrid" class="video-grid"></div>
-    </div>
+    <div class="video-grid" id="videoGrid"></div>
 
-    <div id="loginModal" class="modal">
+    <div id="profileModal" class="modal">
         <div class="modal-content">
-            <span class="close-btn" onclick="closeModal()">&times;</span>
-            <h2 style="text-align:center; margin:0;">Entube 로그인</h2>
-            <input type="email" id="emailInput" placeholder="이메일 주소">
-            <input type="password" id="pwInput" placeholder="비밀번호 (6자리 이상)">
-            <button class="btn btn-primary" onclick="handleAuth('login')">로그인</button>
-            <button class="btn btn-outline" onclick="handleAuth('signup')">새로 회원가입</button>
-            <p id="authMsg" style="color: #ff4a4a; font-size: 12px; text-align: center; margin:0;"></p>
+            <h3>내 프로필 설정</h3>
+            <img id="myPfpPreview" src="" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 10px;">
+            <input type="file" id="pfpInput" accept="image/*">
+            <input type="text" id="nickInput" placeholder="닉네임 입력">
+            <button class="btn-red" onclick="saveProfile()">저장하기</button>
+            <button onclick="closeModal()" style="background:none; color:#aaa; margin-top:10px;">닫기</button>
         </div>
     </div>
 
     <script>
-        // 🚨 충돌을 막기 위해 이름을 supabaseClient로 변경했습니다!
         const supabaseUrl = 'https://kzchubdwrkcpmuempgrg.supabase.co';
-        const supabaseKey = 'sb_publishable_MyFF5Xln3fWLvTqMx2CFNA_obZtoask';
-        const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
-        
-        let currentUser = null;
+        const supabaseKey = 'sb_publishable_MyFF5Xln3fWLvTqMx2CFNA_obZtoask'; 
+        const _client = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        function escapeHTML(str) {
-            if (!str) return '';
-            return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
-        }
+        let myProfile = null;
 
-        // 인증 상태 확인 (supabaseClient 로 변경)
-        supabaseClient.auth.getSession().then(({ data: { session } }) => updateUI(session));
-        supabaseClient.auth.onAuthStateChange((_event, session) => { updateUI(session); loadVideos(); });
-
-        function updateUI(session) {
-            const authSection = document.getElementById('authSection');
+        _client.auth.onAuthStateChange(async (_event, session) => {
             if (session) {
-                currentUser = session.user;
-                authSection.innerHTML = `
-                    <button class="btn btn-upload" onclick="location.href='upload.html'">+ 영상 올리기</button>
-                    <button class="btn btn-outline" onclick="supabaseClient.auth.signOut()">로그아웃</button>`;
+                const { data } = await _client.from('profiles').select('*').eq('id', session.user.id).single();
+                if (!data) { // 프로필 없으면 기본값으로 생성
+                    await _client.from('profiles').insert([{ id: session.user.id }]);
+                    location.reload();
+                }
+                myProfile = data;
+            } else { myProfile = null; }
+            updateUI();
+            loadVideos();
+        });
+
+        function updateUI() {
+            const area = document.getElementById('authSection');
+            if (myProfile) {
+                area.innerHTML = `
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <button onclick="location.href='upload.html'" style="background:red; color:white;">업로드</button>
+                        <div class="user-chip" onclick="openProfileModal()">
+                            <img src="${myProfile.avatar_url}">
+                            <span>${myProfile.nickname}</span>
+                        </div>
+                        <button onclick="_client.auth.signOut()" style="background:none; color:#aaa;">로그아웃</button>
+                    </div>`;
             } else {
-                currentUser = null;
-                authSection.innerHTML = `<button class="btn btn-outline" onclick="openModal()">로그인</button>`;
+                area.innerHTML = `<button onclick="handleLogin()" style="background:white; color:black;">로그인 / 가입</button>`;
             }
         }
 
-        async function handleAuth(action) {
-            const email = document.getElementById('emailInput').value;
-            const password = document.getElementById('pwInput').value;
-            const msg = document.getElementById('authMsg');
-            
-            if (!email || !password) return msg.innerText = "이메일과 비밀번호를 입력해주세요.";
-            msg.innerText = "처리 중...";
-            
-            const { error } = action === 'signup' 
-                ? await supabaseClient.auth.signUp({ email, password }) 
-                : await supabaseClient.auth.signInWithPassword({ email, password });
-            
-            if (error) msg.innerText = error.message;
-            else { msg.innerText = ""; closeModal(); }
+        async function handleLogin() {
+            const email = prompt("이메일 입력:");
+            const password = prompt("비밀번호(6자이상):");
+            if(email && password) {
+                const { error } = await _client.auth.signInWithPassword({ email, password });
+                if(error) await _client.auth.signUp({ email, password });
+            }
         }
 
-        function openModal() { document.getElementById('loginModal').style.display = 'flex'; }
-        function closeModal() { document.getElementById('loginModal').style.display = 'none'; }
-
-        async function loadVideos(searchQuery = '') {
-            const videoGrid = document.getElementById('videoGrid');
-            videoGrid.innerHTML = '<p style="color:#aaa;">영상을 불러오는 중...</p>';
-
-            let query = supabaseClient.from('posts').select('*').order('created_at', { ascending: false });
-            if (searchQuery) query = query.ilike('title', `%${searchQuery}%`);
-
-            const { data: videos, error } = await query;
-            if (error) return videoGrid.innerHTML = '<p>데이터베이스 연결 오류가 발생했습니다.</p>';
+        async function loadVideos() {
+            const grid = document.getElementById('videoGrid');
+            grid.innerHTML = '로딩 중...';
+            // posts와 profiles를 합쳐서 가져오기
+            const { data: videos } = await _client.from('posts').select('*, profiles(nickname, avatar_url)').order('created_at', { ascending: false });
             
-            videoGrid.innerHTML = '';
-            if (videos.length === 0) return videoGrid.innerHTML = '<p>등록된 영상이 없습니다.</p>';
-
-            videos.forEach(video => {
-                const safeTitle = escapeHTML(video.title);
-                const safeAuthorId = escapeHTML(video.author_id);
-                const safeUrl = encodeURI(video.video_url);
-
-                const card = document.createElement('div');
-                card.className = 'video-card';
-                card.innerHTML = `
-                    <video src="${safeUrl}" controls preload="metadata"></video>
-                    <div class="video-info">
-                        <p>${safeTitle}</p>
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span class="video-author">ID: ${safeAuthorId.substring(0,6)}...</span>
-                            <button class="sub-btn" id="subBtn_${safeAuthorId}" onclick="toggleSubscribe('${safeAuthorId}')">구독</button>
-                        </div>
-                        
-                        <button onclick="toggleLike('${video.id}')" id="likeBtn_${video.id}" style="margin-top:10px; padding:5px 10px; background:#333; color:white; border:none; border-radius:5px; cursor:pointer;">
-                            👍 <span id="likeCount_${video.id}">0</span>
-                        </button>
-                        
-                        <div style="margin-top:15px; border-top:1px solid #444; padding-top:10px;">
-                            <div style="display:flex; gap:5px;">
-                                <input type="text" id="commentInput_${video.id}" placeholder="댓글 추가..." style="flex:1; padding:6px; background:#121212; color:white; border:1px solid #555; border-radius:4px;">
-                                <button onclick="addComment('${video.id}')" style="background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer;">작성</button>
-                            </div>
-                            <div id="commentList_${video.id}" style="margin-top:10px; font-size:13px; color:#ccc; max-height:100px; overflow-y:auto;"></div>
+            grid.innerHTML = '';
+            videos?.forEach(v => {
+                const nick = v.profiles?.nickname || '알 수 없음';
+                const pfp = v.profiles?.avatar_url || 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png';
+                const div = document.createElement('div');
+                div.className = 'video-card';
+                div.innerHTML = `
+                    <video src="${v.video_url}" controls></video>
+                    <div class="v-info">
+                        <img src="${pfp}" class="v-avatar">
+                        <div class="v-text">
+                            <p>${v.title}</p>
+                            <span>${nick}</span>
                         </div>
                     </div>`;
-                
-                videoGrid.appendChild(card);
-                
-                if(currentUser) checkSub(video.author_id);
-                loadLikes(video.id);
-                loadComments(video.id);
+                grid.appendChild(div);
             });
         }
 
-        function searchVideos() { loadVideos(document.getElementById('searchInput').value); }
-        document.getElementById('searchInput').addEventListener('keypress', e => { if (e.key === 'Enter') searchVideos(); });
+        function openProfileModal() {
+            document.getElementById('profileModal').style.display = 'flex';
+            document.getElementById('myPfpPreview').src = myProfile.avatar_url;
+            document.getElementById('nickInput').value = myProfile.nickname;
+        }
+        function closeModal() { document.getElementById('profileModal').style.display = 'none'; }
 
-        async function toggleSubscribe(targetId) {
-            if (!currentUser) return openModal();
-            if (currentUser.id === targetId) return alert("자신의 채널은 구독할 수 없습니다.");
+        async function saveProfile() {
+            const nick = document.getElementById('nickInput').value;
+            const file = document.getElementById('pfpInput').files[0];
+            let url = myProfile.avatar_url;
 
-            const btn = document.getElementById(`subBtn_${targetId}`);
-            if (btn.classList.contains('subscribed')) {
-                await supabaseClient.from('subscriptions').delete().match({ follower_id: currentUser.id, followed_id: targetId });
-                btn.classList.remove('subscribed'); btn.innerText = '구독';
-            } else {
-                await supabaseClient.from('subscriptions').insert([{ follower_id: currentUser.id, followed_id: targetId }]);
-                btn.classList.add('subscribed'); btn.innerText = '구독중';
+            if (file) {
+                const path = `pfp_${Date.now()}.${file.name.split('.').pop()}`;
+                await _client.storage.from('avatars').upload(path, file);
+                url = _client.storage.from('avatars').getPublicUrl(path).data.publicUrl;
             }
+
+            const { error } = await _client.from('profiles').update({ nickname: nick, avatar_url: url }).eq('id', myProfile.id);
+            if (!error) location.reload();
         }
-
-        async function checkSub(targetId) {
-            const { data } = await supabaseClient.from('subscriptions').select('*').match({ follower_id: currentUser.id, followed_id: targetId });
-            if (data && data.length > 0) {
-                const btn = document.getElementById(`subBtn_${targetId}`);
-                if(btn) { btn.classList.add('subscribed'); btn.innerText = '구독중'; }
-            }
-        }
-
-        async function toggleLike(postId) {
-            if (!currentUser) return openModal();
-            const { data } = await supabaseClient.from('likes').select('*').match({ user_id: currentUser.id, post_id: postId });
-            
-            if (data && data.length > 0) {
-                await supabaseClient.from('likes').delete().match({ user_id: currentUser.id, post_id: postId });
-            } else {
-                await supabaseClient.from('likes').insert([{ user_id: currentUser.id, post_id: postId }]);
-            }
-            loadLikes(postId);
-        }
-
-        async function loadLikes(postId) {
-            const { data, count } = await supabaseClient.from('likes').select('*', { count: 'exact' }).match({ post_id: postId });
-            document.getElementById(`likeCount_${postId}`).innerText = count || 0;
-            const btn = document.getElementById(`likeBtn_${postId}`);
-            
-            if (currentUser && data.some(like => like.user_id === currentUser.id)) {
-                btn.style.color = "#ff4a4a";
-            } else {
-                btn.style.color = "white";
-            }
-        }
-
-        async function addComment(postId) {
-            if (!currentUser) return openModal();
-            const input = document.getElementById(`commentInput_${postId}`);
-            const content = input.value.trim();
-            if (!content) return;
-
-            const { error } = await supabaseClient.from('comments').insert([{ user_id: currentUser.id, post_id: postId, content: content }]);
-            if (!error) { input.value = ''; loadComments(postId); }
-        }
-
-        async function loadComments(postId) {
-            const listDiv = document.getElementById(`commentList_${postId}`);
-            const { data: comments } = await supabaseClient.from('comments').select('*').match({ post_id: postId }).order('created_at', { ascending: false });
-
-            if (!comments || comments.length === 0) return listDiv.innerHTML = '댓글이 없습니다.';
-            
-            listDiv.innerHTML = '';
-            comments.forEach(comment => {
-                const div = document.createElement('div');
-                div.style.marginBottom = "5px";
-                div.innerHTML = `<strong>User_${escapeHTML(comment.user_id).substring(0,4)}</strong>: ${escapeHTML(comment.content)}`;
-                listDiv.appendChild(div);
-            });
-        }
-
-        window.onload = () => loadVideos();
     </script>
 </body>
 </html>
