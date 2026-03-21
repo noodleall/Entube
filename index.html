@@ -1,285 +1,247 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Entube - 프리미엄 마스터</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        :root { 
-            --bg-base: #f9fafb; --bg-surface: #ffffff; --bg-hover: #f3f4f6; 
-            --text-primary: #111827; --text-secondary: #6b7280; 
-            --brand-color: #2563eb; --divider: #e5e7eb; --danger: #ef4444;
-            --radius-md: 12px; --radius-lg: 16px; --radius-xl: 24px;
-        }
-        body { font-family: 'Pretendard', sans-serif; background: var(--bg-base); color: var(--text-primary); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow-x: hidden; }
-        * { box-sizing: border-box; }
-        button { cursor: pointer; transition: 0.2s; border: none; font-family: inherit; }
-        
-        /* 헤더 디자인 */
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 0 32px; height: 72px; background: white; position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid var(--divider); }
-        .logo { font-size: 24px; font-weight: 800; cursor: pointer; letter-spacing: -1px; }
-        .logo span { color: var(--brand-color); }
-        .search-box { display: flex; width: 450px; background: var(--bg-base); border-radius: var(--radius-xl); overflow: hidden; }
-        .search-box input { flex: 1; padding: 12px 20px; background: transparent; border: none; outline: none; }
-        .header-right { display: flex; gap: 16px; align-items: center; }
-        .btn-main { background: var(--brand-color); color: white; padding: 10px 20px; border-radius: 20px; font-weight: 700; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entube</title>
 
-        /* 레이아웃 & 사이드바 */
-        .main-container { display: flex; flex: 1; overflow: hidden; }
-        .sidebar { width: 240px; padding: 24px 16px; background: white; border-right: 1px solid var(--divider); }
-        .sidebar-item { padding: 12px 16px; font-weight: 600; cursor: pointer; border-radius: 8px; margin-bottom: 4px; }
-        .sidebar-item.active { background: #eff6ff; color: var(--brand-color); }
-        
-        .content-area { flex: 1; overflow-y: auto; }
-        .category-bar { display: flex; gap: 10px; padding: 16px 32px; background: white; border-bottom: 1px solid var(--divider); position: sticky; top: 0; z-index: 10; }
-        .chip { padding: 8px 16px; border-radius: 20px; border: 1px solid var(--divider); background: white; font-weight: 600; }
-        .chip.active { background: var(--text-primary); color: white; }
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-        /* 영상 그리드 */
-        .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 32px; padding: 32px; }
-        .video-card { cursor: pointer; transition: 0.2s; }
-        .video-card:hover { transform: translateY(-4px); }
-        .thumbnail { width: 100%; aspect-ratio: 16/9; border-radius: var(--radius-lg); object-fit: cover; background: #eee; }
-        .meta { margin-top: 12px; display: flex; gap: 12px; }
-        .meta-img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+<style>
+:root {
+    --bg-base:#f9fafb;
+    --bg-surface:#fff;
+    --text-primary:#111;
+    --text-secondary:#666;
+    --brand:#2563eb;
+}
 
-        /* 📺 확대 플레이어 모달 */
-        .player-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; justify-content: center; overflow-y: auto; padding: 40px 0; }
-        .player-content { background: white; width: 90%; max-width: 900px; border-radius: 16px; overflow: hidden; }
-        .video-wrapper video { width: 100%; aspect-ratio: 16/9; background: #000; display: block; }
-        .player-info { padding: 24px; border-bottom: 1px solid var(--divider); display: flex; justify-content: space-between; align-items: center; }
-        
-        /* 💬 댓글창 */
-        .comment-area { padding: 24px; background: #fdfdfd; }
-        .comment-input-box { display: flex; gap: 12px; margin-bottom: 24px; }
-        .comment-input-box input { flex: 1; padding: 12px; border: 1px solid var(--divider); border-radius: 8px; }
-        .comment-list { display: flex; flex-direction: column; gap: 16px; }
+body {margin:0;font-family:sans-serif;background:var(--bg-base);}
+button {cursor:pointer;border:none}
 
-        /* 공통 모달 (로그인/프로필) */
-        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 4000; justify-content: center; align-items: center; }
-        .modal-card { background: white; padding: 40px; border-radius: 16px; width: 380px; text-align: center; }
-        .input-group { margin-bottom: 16px; }
-        .input-group input { width: 100%; padding: 14px; border: 1px solid var(--divider); border-radius: 8px; }
+/* 헤더 */
+.header {
+    display:flex;justify-content:space-between;
+    padding:16px 32px;background:#fff;
+    border-bottom:1px solid #ddd;
+}
 
-        /* 알림 토스트 */
-        .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 5000; }
-        .toast { background: #333; color: white; padding: 16px 24px; border-radius: 8px; margin-top: 10px; opacity: 0; transition: 0.3s; }
-        .toast.show { opacity: 1; }
-    </style>
+.video-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
+    gap:20px;padding:20px;
+}
+
+.video-card {cursor:pointer}
+.thumbnail {width:100%;aspect-ratio:16/9;background:#eee}
+
+/* 🔥 모달 */
+.player-modal {
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.9);
+    z-index:999;
+
+    justify-content:center;
+    align-items:flex-start;
+    overflow-y:auto;
+    padding:40px 0;
+}
+
+.player-content {
+    background:#fff;
+    width:90%;
+    max-width:900px;
+
+    max-height:90vh;
+    display:flex;
+    flex-direction:column;
+    border-radius:12px;
+}
+
+.video-wrapper video {
+    width:100%;
+    aspect-ratio:16/9;
+    background:black;
+}
+
+.player-info {
+    padding:16px;
+    display:flex;
+    justify-content:space-between;
+}
+
+.comment-area {
+    flex:1;
+    overflow-y:auto;
+    padding:16px;
+}
+</style>
 </head>
+
 <body>
-    <div class="toast-container" id="toastContainer"></div>
 
-    <header class="header">
-        <div class="logo" onclick="location.reload()">Entube<span>.</span></div>
-        <div class="search-box">
-            <input type="text" id="searchInput" placeholder="검색..." onkeypress="if(event.key==='Enter') loadVideos(this.value)">
-        </div>
-        <div class="header-right" id="authSection">
-            <button class="btn-main" onclick="openModal('authModal')">시작하기</button>
-        </div>
-    </header>
+<header class="header">
+    <b>Entube</b>
+    <button onclick="login()">로그인</button>
+</header>
 
-    <div class="main-container">
-        <aside class="sidebar">
-            <div class="sidebar-item active">홈</div>
-            <div class="sidebar-item">탐색</div>
-            <div class="sidebar-item">구독</div>
-        </aside>
-        <main class="content-area">
-            <div class="category-bar">
-                <button class="chip active" onclick="filterCat('전체', this)">전체</button>
-                <button class="chip" onclick="filterCat('음악', this)">음악</button>
-                <button class="chip" onclick="filterCat('게임', this)">게임</button>
-                <button class="chip" onclick="filterCat('뉴스', this)">뉴스</button>
-            </div>
-            <div class="video-grid" id="videoGrid"></div>
-        </main>
-    </div>
+<div class="video-grid" id="videoGrid"></div>
 
-    <div id="playerModal" class="player-modal" onclick="if(event.target==this) closePlayer()">
-        <div class="player-content">
+<!-- 🎬 플레이어 -->
+<div id="playerModal" class="player-modal" onclick="if(event.target==this) closePlayer()">
+    <div class="player-content">
+
+        <div class="video-wrapper">
             <video id="mainVideo" controls autoplay></video>
-            <div class="player-info">
-                <div>
-                    <h2 id="playerTitle" style="margin:0;">제목</h2>
-                    <p id="playerMeta" style="color:var(--text-secondary); margin:4px 0 0 0;">작성자</p>
-                </div>
-                <button onclick="hitLike()" style="background:#eee; padding:10px 20px; border-radius:20px; font-weight:bold;">👍 <span id="likeCount">0</span></button>
+        </div>
+
+        <div class="player-info">
+            <div>
+                <h3 id="title"></h3>
+                <p id="author"></p>
             </div>
-            <div class="comment-area">
-                <div class="comment-input-box">
-                    <input type="text" id="commentInput" placeholder="댓글 달기...">
-                    <button class="btn-main" onclick="postComment()">등록</button>
-                </div>
-                <div id="commentList" class="comment-list"></div>
-            </div>
-            <button onclick="closePlayer()" style="width:100%; padding:16px; border:none; background:#f3f4f6; font-weight:bold;">닫기</button>
+            <button onclick="hitLike()">👍 <span id="likeCount">0</span></button>
         </div>
-    </div>
 
-    <div id="authModal" class="modal-overlay">
-        <div class="modal-card">
-            <h2 id="mTitle">로그인</h2>
-            <div class="input-group"><input type="text" id="authId" placeholder="아이디"></div>
-            <div class="input-group"><input type="password" id="authPw" placeholder="비밀번호 (6자 이상)"></div>
-            <div class="input-group" id="nickG" style="display:none;"><input type="text" id="authNick" placeholder="사용할 닉네임"></div>
-            <button class="btn-main" style="width:100%; padding:14px;" onclick="executeAuth()">확인</button>
-            <button onclick="isSignUp = !isSignUp; updateAuthUI();" style="background:none; color:blue; margin-top:15px; text-decoration:underline;">회원가입/로그인 전환</button>
-            <button onclick="closeModal('authModal')" style="display:block; margin:15px auto 0; background:none; color:#aaa;">취소</button>
+        <div class="comment-area">
+            <input id="commentInput" placeholder="댓글">
+            <button onclick="postComment()">등록</button>
+            <div id="commentList"></div>
         </div>
+
     </div>
+</div>
 
-    <div id="profileModal" class="modal-overlay">
-        <div class="modal-card">
-            <h2>닉네임 변경</h2>
-            <div class="input-group"><input type="text" id="newNick" placeholder="새로운 닉네임"></div>
-            <button class="btn-main" style="width:100%; padding:14px;" onclick="updateNick()">저장하기</button>
-            <button onclick="closeModal('profileModal')" style="background:none; color:#aaa; margin-top:15px;">취소</button>
-        </div>
-    </div>
+<script>
+const supabase = window.supabase.createClient(
+'https://kzchubdwrkcpmuempgrg.supabase.co',
+'sb_publishable_MyFF5Xln3fWLvTqMx2CFNA_obZtoask'
+);
 
-    <script>
-        const supabaseUrl = 'https://kzchubdwrkcpmuempgrg.supabase.co';
-        const supabaseKey = 'sb_publishable_MyFF5Xln3fWLvTqMx2CFNA_obZtoask'; 
-        const _client = window.supabase.createClient(supabaseUrl, supabaseKey);
+let user = null;
+let currentVideo = null;
 
-        let myProfile = null;
-        let isSignUp = false;
-        let currentVideo = null;
-        let currentCat = '전체';
-        const defaultPfp = 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png';
+/* 로그인 */
+async function login(){
+    const id = prompt("아이디");
+    const pw = prompt("비번");
 
-        function showToast(msg) {
-            const t = document.createElement('div'); t.className = 'toast'; t.innerText = msg;
-            document.getElementById('toastContainer').appendChild(t);
-            setTimeout(()=>t.classList.add('show'), 10);
-            setTimeout(()=>{t.classList.remove('show'); setTimeout(()=>t.remove(), 300);}, 3000);
-        }
+    const {error} = await supabase.auth.signInWithPassword({
+        email:id+"@a.com",
+        password:pw
+    });
 
-        async function init() {
-            const { data: { session } } = await _client.auth.getSession();
-            if (session) {
-                const { data } = await _client.from('profiles').select('*').eq('id', session.user.id).single();
-                myProfile = data;
-            }
-            renderHeader();
-            loadVideos();
-        }
+    if(error) alert(error.message);
+    else location.reload();
+}
 
-        function renderHeader() {
-            const area = document.getElementById('authSection');
-            if (myProfile) {
-                area.innerHTML = `
-                    <button class="btn-main" style="background:#eee; color:#333; margin-right:8px;" onclick="location.href='upload.html'">업로드</button>
-                    <img src="${myProfile.avatar_url || defaultPfp}" style="width:36px; height:36px; border-radius:50%; cursor:pointer;" onclick="openModal('profileModal')">
-                    <b style="margin:0 10px; cursor:pointer;" onclick="openModal('profileModal')">${myProfile.nickname}님</b>
-                    <button onclick="_client.auth.signOut().then(()=>location.reload())" style="background:none; color:red; font-size:12px;">로그아웃</button>`;
-            } else {
-                area.innerHTML = `<button class="btn-main" onclick="openModal('authModal')">시작하기</button>`;
-            }
-        }
+/* 영상 불러오기 */
+async function loadVideos(){
+    const {data} = await supabase
+        .from('posts')
+        .select('*');
 
-        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-        function updateAuthUI() {
-            document.getElementById('mTitle').innerText = isSignUp ? '회원가입' : '로그인';
-            document.getElementById('nickG').style.display = isSignUp ? 'block' : 'none';
-        }
+    const grid = document.getElementById('videoGrid');
+    grid.innerHTML='';
 
-        async function executeAuth() {
-            const id = document.getElementById('authId').value.trim();
-            const pw = document.getElementById('authPw').value.trim();
-            const nick = document.getElementById('authNick').value.trim();
-            const email = `${id}@fake.com`;
+    data.forEach(v=>{
+        const div=document.createElement('div');
+        div.className='video-card';
+        div.innerHTML=`<video src="${v.video_url}" class="thumbnail"></video>`;
+        div.onclick=()=>openPlayer(v);
+        grid.appendChild(div);
+    });
+}
 
-            if (isSignUp) {
-                const { data, error } = await _client.auth.signUp({ email, password: pw });
-                if (error) return alert(error.message);
-                await _client.from('profiles').insert([{ id: data.user.id, nickname: nick }]);
-                showToast("가입 완료! 로그인하세요."); location.reload();
-            } else {
-                const { error } = await _client.auth.signInWithPassword({ email, password: pw });
-                if (error) alert("실패: " + error.message); else location.reload();
-            }
-        }
+/* 플레이어 */
+function openPlayer(v){
+    currentVideo=v;
+    document.getElementById('playerModal').style.display='flex';
+    mainVideo.src=v.video_url;
+    title.innerText=v.title;
+    author.innerText=v.user_id;
+    likeCount.innerText=v.likes||0;
+    loadComments(v.id);
+}
 
-        async function updateNick() {
-            const nick = document.getElementById('newNick').value.trim();
-            if(!nick) return;
-            const { error } = await _client.from('profiles').update({ nickname: nick }).eq('id', myProfile.id);
-            if(!error) { showToast("닉네임 변경 성공!"); location.reload(); }
-        }
+function closePlayer(){
+    playerModal.style.display='none';
+    mainVideo.pause();
+}
 
-        async function loadVideos(search = '') {
-            let q = _client.from('posts').select('*, profiles(nickname, avatar_url)').order('created_at', {ascending: false});
-            if (currentCat !== '전체') q = q.eq('category', currentCat);
-            if (search) q = q.ilike('title', `%${search}%`);
-            const { data: videos } = await q;
-            const grid = document.getElementById('videoGrid');
-            grid.innerHTML = '';
-            videos?.forEach(v => {
-                const card = document.createElement('div');
-                card.className = 'video-card';
-                card.onclick = () => openPlayer(v);
-                card.innerHTML = `<video src="${v.video_url}" class="thumbnail"></video>
-                                  <div class="meta">
-                                      <img src="${v.profiles?.avatar_url || defaultPfp}" class="meta-img">
-                                      <div><h3 style="margin:0;">${v.title}</h3><p style="margin:4px 0 0 0; color:#666; font-size:14px;">${v.profiles?.nickname}</p></div>
-                                  </div>`;
-                grid.appendChild(card);
-            });
-        }
+/* 👍 좋아요 */
+async function hitLike(){
+    if(!currentVideo) return;
 
-        function filterCat(cat, btn) {
-            currentCat = cat;
-            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-            btn.classList.add('active');
-            loadVideos();
-        }
+    const {data:session} = await supabase.auth.getUser();
+    if(!session.user) return alert("로그인 필요");
 
-        function openPlayer(v) {
-            currentVideo = v;
-            document.getElementById('playerModal').style.display = 'flex';
-            document.getElementById('mainVideo').src = v.video_url;
-            document.getElementById('playerTitle').innerText = v.title;
-            document.getElementById('playerMeta').innerText = v.profiles?.nickname;
-            document.getElementById('likeCount').innerText = v.likes || 0;
-            loadComments(v.id);
-        }
+    const uid=session.user.id;
 
-        function closePlayer() { document.getElementById('playerModal').style.display = 'none'; document.getElementById('mainVideo').pause(); }
+    const {data:exist} = await supabase
+        .from('likes')
+        .select('*')
+        .eq('post_id',currentVideo.id)
+        .eq('user_id',uid)
+        .single();
 
-        async function hitLike() {
-            if(!myProfile) return showToast("로그인 필요!");
-            const newLikes = (currentVideo.likes || 0) + 1;
-            await _client.from('posts').update({ likes: newLikes }).eq('id', currentVideo.id);
-            document.getElementById('likeCount').innerText = newLikes;
-            currentVideo.likes = newLikes;
-        }
+    if(exist){
+        return alert("이미 누름");
+    }
 
-        async function loadComments(postId) {
-            const { data: comments } = await _client.from('comments').select('*, profiles(nickname)').eq('post_id', postId);
-            const list = document.getElementById('commentList');
-            list.innerHTML = comments?.length ? '' : '첫 댓글을 남겨보세요!';
-            comments?.forEach(c => {
-                const d = document.createElement('div');
-                d.innerHTML = `<b>${c.profiles?.nickname}:</b> ${c.content}`;
-                list.appendChild(d);
-            });
-        }
+    await supabase.from('likes').insert({
+        post_id:currentVideo.id,
+        user_id:uid
+    });
 
-        async function postComment() {
-            if(!myProfile) return showToast("로그인해라!");
-            const content = document.getElementById('commentInput').value.trim();
-            if(!content) return;
-            const { error } = await _client.from('comments').insert([{ post_id: currentVideo.id, author_id: myProfile.id, content }]);
-            if(error) alert("실패: " + error.message);
-            else { document.getElementById('commentInput').value = ''; loadComments(currentVideo.id); }
-        }
+    const newLikes=(currentVideo.likes||0)+1;
 
-        init();
-    </script>
+    await supabase.from('posts')
+        .update({likes:newLikes})
+        .eq('id',currentVideo.id);
+
+    likeCount.innerText=newLikes;
+    currentVideo.likes=newLikes;
+}
+
+/* 💬 댓글 */
+async function loadComments(postId){
+    const {data} = await supabase
+        .from('comments')
+        .select('*')
+        .eq('post_id',postId);
+
+    const list=document.getElementById('commentList');
+    list.innerHTML='';
+
+    data.forEach(c=>{
+        const d=document.createElement('div');
+        d.innerText=c.content;
+        list.appendChild(d);
+    });
+}
+
+async function postComment(){
+    const txt=document.getElementById('commentInput').value;
+    if(!txt) return;
+
+    const {data:session} = await supabase.auth.getUser();
+    if(!session.user) return alert("로그인 필요");
+
+    await supabase.from('comments').insert({
+        post_id:currentVideo.id,
+        author_id:session.user.id,
+        content:txt
+    });
+
+    commentInput.value='';
+    loadComments(currentVideo.id);
+}
+
+loadVideos();
+</script>
+
 </body>
 </html>
