@@ -6,117 +6,75 @@
     <title>Entube - 프리미엄</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* [1] 전역 및 변수 설정 (모던 라이트 테마) */
+        /* 모던 라이트 테마 설정 */
         :root { 
-            --bg-base: #f8f9fa; 
-            --bg-surface: #ffffff; 
-            --bg-hover: #e9ecef; 
-            --text-primary: #212529; 
-            --text-secondary: #6c757d; 
-            --brand-color: #3b82f6; 
-            --divider: #dee2e6; 
-            --danger: #ef4444;
+            --bg-base: #f8f9fa; --bg-surface: #ffffff; --bg-hover: #e9ecef; 
+            --text-primary: #212529; --text-secondary: #6c757d; 
+            --brand-color: #3b82f6; --divider: #dee2e6; --danger: #ef4444;
         }
-        body { font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif; background: var(--bg-base); color: var(--text-primary); margin: 0; overflow-x: hidden; display: flex; flex-direction: column; height: 100vh; }
+        body { font-family: 'Pretendard', sans-serif; background: var(--bg-base); color: var(--text-primary); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow-x: hidden; }
         * { box-sizing: border-box; }
-        button { cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
-        a { text-decoration: none; color: inherit; }
-
-        /* [2] 상단 네비게이션 바 */
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 0 24px; height: 64px; background: var(--bg-surface); position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid var(--divider); }
-        .header-left { display: flex; align-items: center; gap: 20px; }
-        .logo { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: var(--text-primary); cursor: pointer; }
-        .logo span { color: var(--brand-color); }
+        button { cursor: pointer; transition: all 0.2s ease; }
         
-        .search-container { display: flex; flex: 0 1 500px; align-items: center; }
-        .search-box { display: flex; width: 100%; background: var(--bg-base); border: 1px solid var(--divider); border-radius: 8px; overflow: hidden; }
-        .search-box input { flex: 1; padding: 12px 16px; background: transparent; border: none; color: var(--text-primary); font-size: 15px; outline: none; }
-        .search-box input::placeholder { color: #adb5bd; }
-        .search-box button { padding: 10px 20px; background: var(--bg-surface); border: none; border-left: 1px solid var(--divider); color: var(--text-primary); font-weight: 600; }
-        .search-box button:hover { background: var(--bg-hover); }
-
-        .header-right { display: flex; align-items: center; gap: 16px; min-width: 150px; justify-content: flex-end; }
-        .btn-auth { background: var(--brand-color); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 14px; }
-        .btn-auth:hover { background: #2563eb; }
-        .btn-upload { background: var(--bg-surface); border: 1px solid var(--divider); color: var(--text-primary); padding: 10px 16px; border-radius: 8px; font-weight: 600; font-size: 14px; }
-        .btn-upload:hover { background: var(--bg-hover); }
-        .profile-wrapper { position: relative; }
+        /* 헤더 & 네비게이션 */
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 0 24px; height: 64px; background: var(--bg-surface); position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid var(--divider); }
+        .logo { font-size: 22px; font-weight: 800; color: var(--text-primary); cursor: pointer; }
+        .logo span { color: var(--brand-color); }
+        .search-box { display: flex; width: 500px; background: var(--bg-base); border: 1px solid var(--divider); border-radius: 8px; overflow: hidden; }
+        .search-box input { flex: 1; padding: 12px 16px; background: transparent; border: none; color: var(--text-primary); outline: none; }
+        .search-box button { padding: 10px 20px; background: var(--bg-surface); border: none; border-left: 1px solid var(--divider); font-weight: 600; }
+        .header-right { display: flex; gap: 16px; align-items: center; }
+        .btn-auth { background: var(--brand-color); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; }
+        .btn-upload { background: var(--bg-surface); border: 1px solid var(--divider); padding: 10px 16px; border-radius: 8px; font-weight: 600; }
         .profile-img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; cursor: pointer; border: 1px solid var(--divider); }
 
-        /* [3] 프로필 드롭다운 메뉴 */
-        .dropdown { display: none; position: absolute; right: 0; top: 48px; background: var(--bg-surface); border-radius: 12px; width: 240px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: hidden; z-index: 1000; border: 1px solid var(--divider); }
-        .dropdown-header { padding: 20px 16px; border-bottom: 1px solid var(--divider); display: flex; gap: 12px; align-items: center; background: var(--bg-base); }
-        .dropdown-header img { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--divider); }
-        .dropdown-header div p { margin: 0 0 4px 0; font-weight: 700; font-size: 15px; }
-        .dropdown-header div span { margin: 0; font-size: 13px; color: var(--brand-color); font-weight: 600; cursor: pointer; }
-        .dropdown-item { display: block; padding: 14px 20px; color: var(--text-primary); background: transparent; border: none; width: 100%; text-align: left; font-size: 14px; font-weight: 500; cursor: pointer; border-bottom: 1px solid #f1f3f5; }
-        .dropdown-item:last-child { border-bottom: none; }
-        .dropdown-item:hover { background: var(--bg-hover); padding-left: 24px; }
-
-        /* [4] 메인 레이아웃 */
+        /* 메인 레이아웃 */
         .main-container { display: flex; flex: 1; overflow: hidden; }
-        .sidebar { width: 240px; padding: 20px 16px; display: flex; flex-direction: column; gap: 8px; background: var(--bg-surface); border-right: 1px solid var(--divider); overflow-y: auto; }
-        .sidebar-item { display: flex; align-items: center; gap: 16px; color: var(--text-primary); font-size: 15px; font-weight: 600; cursor: pointer; padding: 12px 16px; border-radius: 8px; }
+        .sidebar { width: 240px; padding: 20px 16px; background: var(--bg-surface); border-right: 1px solid var(--divider); }
+        .sidebar-item { padding: 12px 16px; font-weight: 600; cursor: pointer; border-radius: 8px; margin-bottom: 8px; }
         .sidebar-item.active { background: #eff6ff; color: var(--brand-color); }
         .sidebar-item:hover:not(.active) { background: var(--bg-hover); }
-
-        .content-area { flex: 1; overflow-y: auto; background: var(--bg-base); }
+        .content-area { flex: 1; overflow-y: auto; }
         
-        /* [5] 카테고리 칩 */
-        .category-bar { display: flex; gap: 10px; padding: 16px 32px; position: sticky; top: 0; background: rgba(248, 249, 250, 0.95); backdrop-filter: blur(5px); z-index: 10; border-bottom: 1px solid var(--divider); overflow-x: auto; }
-        .chip { background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--divider); padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 600; white-space: nowrap; }
-        .chip:hover { background: var(--bg-hover); }
-        .chip.active { background: var(--text-primary); color: white; border-color: var(--text-primary); }
-
-        /* [6] 비디오 그리드 & 스켈레톤 로딩 */
-        .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; row-gap: 40px; padding: 32px; }
+        /* 영상 그리드 */
+        .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; padding: 32px; }
         .video-card { display: flex; flex-direction: column; gap: 14px; cursor: pointer; }
-        .thumbnail { width: 100%; aspect-ratio: 16/9; border-radius: 12px; background: #e9ecef; object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .thumbnail { width: 100%; aspect-ratio: 16/9; border-radius: 12px; background: #e9ecef; object-fit: cover; }
         .details { display: flex; gap: 14px; }
         .details-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--divider); object-fit: cover; }
-        .meta h3 { margin: 0 0 6px 0; font-size: 16px; font-weight: 700; color: var(--text-primary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; }
-        .meta p { margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
-
+        .meta h3 { margin: 0 0 6px 0; font-size: 16px; font-weight: 700; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .meta p { margin: 0; font-size: 13px; color: var(--text-secondary); }
+        
         @keyframes shimmer { 0% { background-position: -200px 0; } 100% { background-position: calc(200px + 100%) 0; } }
         .skeleton { background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
 
-        /* [7] 모달 시스템 */
-        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 2000; justify-content: center; align-items: center; }
-        .modal-card { background: var(--bg-surface); padding: 40px; border-radius: 16px; width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
-        .modal-card h2 { margin: 0 0 10px 0; font-size: 24px; font-weight: 800; color: var(--text-primary); }
-        .modal-card p { color: var(--text-secondary); font-size: 14px; margin-bottom: 30px; }
-        .input-group { margin-bottom: 20px; }
-        .input-group input { width: 100%; padding: 14px 16px; background: var(--bg-base); border: 1px solid var(--divider); color: var(--text-primary); border-radius: 8px; font-size: 15px; }
-        .input-group input:focus { border-color: var(--brand-color); outline: none; background: white; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
-        .btn-primary { width: 100%; padding: 14px; background: var(--text-primary); color: white; font-weight: 700; border: none; border-radius: 8px; font-size: 15px; margin-top: 10px; }
-        .btn-primary:hover { background: #000; }
-        .btn-text { width: 100%; padding: 14px; background: transparent; color: var(--text-secondary); border: none; font-weight: 600; margin-top: 8px; }
-        .btn-text:hover { color: var(--text-primary); }
+        /* 모달 & 입력 폼 */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 2000; }
+        .modal-card { background: var(--bg-surface); padding: 40px; border-radius: 16px; width: 380px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+        .modal-card h2 { margin: 0 0 8px 0; font-size: 22px; font-weight: 800; }
+        .input-group { margin-bottom: 16px; }
+        .input-group input { width: 100%; padding: 14px; border: 1px solid var(--divider); border-radius: 8px; font-size: 14px; }
+        .input-group input:focus { border-color: var(--brand-color); outline: none; }
+        .btn-primary { width: 100%; padding: 14px; background: var(--brand-color); color: white; border: none; border-radius: 8px; font-weight: 700; margin-top: 10px; }
+        .btn-toggle { width: 100%; padding: 14px; background: transparent; border: none; color: var(--text-secondary); font-weight: 600; margin-top: 8px; text-decoration: underline; }
 
-        /* [8] 토스트 알림창 */
+        /* 토스트 알림 */
         .toast-container { position: fixed; bottom: 32px; right: 32px; z-index: 3000; display: flex; flex-direction: column; gap: 12px; }
-        .toast { background: var(--text-primary); color: white; padding: 16px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.15); transform: translateX(100px); opacity: 0; transition: all 0.3s ease; display: flex; align-items: center; gap: 12px; }
-        .toast.show { transform: translateX(0); opacity: 1; }
+        .toast { background: var(--text-primary); color: white; padding: 16px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; opacity: 0; transform: translateY(20px); transition: all 0.3s; }
+        .toast.show { opacity: 1; transform: translateY(0); }
         .toast.error { background: var(--danger); }
     </style>
 </head>
 <body>
-
     <div class="toast-container" id="toastContainer"></div>
 
     <header class="header">
-        <div class="header-left">
-            <div class="logo" onclick="location.reload()">Entube<span>.</span></div>
+        <div class="logo" onclick="location.reload()">Entube<span>.</span></div>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="영상 검색..." onkeypress="if(event.key==='Enter') searchVideos()">
+            <button onclick="searchVideos()">검색</button>
         </div>
-        <div class="search-container">
-            <div class="search-box">
-                <input type="text" id="searchInput" placeholder="어떤 영상을 찾으시나요?" onkeypress="if(event.key==='Enter') searchVideos()">
-                <button onclick="searchVideos()">검색</button>
-            </div>
-        </div>
-        <div class="header-right" id="authSection">
-            <button class="btn-auth" onclick="toggleModal('authModal', true)">시작하기</button>
-        </div>
+        <div class="header-right" id="authSection"></div>
     </header>
 
     <div class="main-container">
@@ -124,54 +82,30 @@
             <div class="sidebar-item active" onclick="location.reload()">홈</div>
             <div class="sidebar-item">탐색</div>
             <div class="sidebar-item">구독</div>
-            <div style="height: 1px; background: var(--divider); margin: 10px 0;"></div>
-            <div class="sidebar-item">보관함</div>
-            <div class="sidebar-item">시청 기록</div>
         </aside>
-
         <main class="content-area">
-            <div class="category-bar">
-                <button class="chip active">전체</button>
-                <button class="chip">트렌딩</button>
-                <button class="chip">음악</button>
-                <button class="chip">엔터테인먼트</button>
-                <button class="chip">교육</button>
-                <button class="chip">최신 업로드</button>
-            </div>
-            
             <div class="video-grid" id="videoGrid"></div>
         </main>
     </div>
 
     <div class="modal-overlay" id="authModal">
         <div class="modal-card">
-            <h2>환영합니다</h2>
-            <p>이메일로 간편하게 시작하세요</p>
+            <h2 id="modalTitle">로그인</h2>
+            <p id="modalDesc" style="color:var(--text-secondary); font-size:14px; margin-bottom:24px;">아이디와 비밀번호를 입력하세요.</p>
+            
             <div class="input-group">
-                <input type="email" id="authEmail" placeholder="이메일 주소">
+                <input type="text" id="authId" placeholder="아이디 (영문/숫자)">
             </div>
             <div class="input-group">
-                <input type="password" id="authPw" placeholder="비밀번호 (6자리 이상)">
+                <input type="password" id="authPw" placeholder="비밀번호 (6자 이상)">
             </div>
-            <button class="btn-primary" onclick="handleAuth('login')">로그인</button>
-            <button class="btn-text" style="color: var(--brand-color);" onclick="handleAuth('signup')">새 계정 만들기</button>
-            <button class="btn-text" onclick="toggleModal('authModal', false)">닫기</button>
-        </div>
-    </div>
+            <div class="input-group" id="nickGroup" style="display: none;">
+                <input type="text" id="authNick" placeholder="사용할 닉네임 (예: 슈퍼유튜버)">
+            </div>
 
-    <div class="modal-overlay" id="profileModal">
-        <div class="modal-card" style="text-align: center;">
-            <h2>프로필 설정</h2>
-            <p>자신만의 멋진 채널을 만들어보세요</p>
-            <img id="pfpPreview" src="" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-            <div class="input-group">
-                <input type="file" id="pfpInput" accept="image/*" onchange="previewImage(this)" style="border:none; padding:0; background:transparent;">
-            </div>
-            <div class="input-group">
-                <input type="text" id="nickInput" placeholder="채널 이름 입력">
-            </div>
-            <button class="btn-primary" id="saveBtn" onclick="saveProfile()" style="background:var(--brand-color);">변경사항 저장</button>
-            <button class="btn-text" onclick="toggleModal('profileModal', false)">취소</button>
+            <button class="btn-primary" id="authSubmitBtn" onclick="executeAuth()">로그인</button>
+            <button class="btn-toggle" id="authToggleBtn" onclick="toggleAuthMode()">계정이 없나요? 회원가입</button>
+            <button class="btn-toggle" style="text-decoration:none; color:#adb5bd;" onclick="closeModal('authModal')">닫기</button>
         </div>
     </div>
 
@@ -181,43 +115,30 @@
         const _client = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         let myProfile = null;
+        let isSignupMode = false; // 현재 로그인 모드인지 가입 모드인지 기억하는 변수
         const defaultPfp = 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png';
 
-        // [보안] XSS 방어 함수 추가
         function escapeHTML(str) {
             if (!str) return '';
-            return str.replace(/[&<>'"]/g, function(tag) {
-                const charsToReplace = { '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' };
-                return charsToReplace[tag] || tag;
-            });
+            return String(str).replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
         }
 
         function showToast(message, isError = false) {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
             toast.className = `toast ${isError ? 'error' : ''}`;
-            toast.innerHTML = isError ? `[오류] ${message}` : `[알림] ${message}`;
+            toast.innerText = message;
             container.appendChild(toast);
-            
             setTimeout(() => toast.classList.add('show'), 10);
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
+            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000);
         }
 
         _client.auth.onAuthStateChange(async (_event, session) => {
             if (session) {
-                try {
-                    const { data, error } = await _client.from('profiles').select('*').eq('id', session.user.id).single();
-                    if (!data) {
-                        const { data: newProf } = await _client.from('profiles').insert([{ id: session.user.id }]).select().single();
-                        myProfile = newProf;
-                    } else { myProfile = data; }
-                } catch(e) { console.error(e); }
+                const { data } = await _client.from('profiles').select('*').eq('id', session.user.id).single();
+                myProfile = data || { id: session.user.id, nickname: '익명', avatar_url: defaultPfp };
             } else { myProfile = null; }
-            renderHeader(); 
-            loadVideos();
+            renderHeader(); loadVideos();
         });
 
         function renderHeader() {
@@ -225,161 +146,111 @@
             if (myProfile) {
                 area.innerHTML = `
                     <button class="btn-upload" onclick="location.href='upload.html'">업로드</button>
-                    <div class="profile-wrapper">
-                        <img src="${myProfile.avatar_url || defaultPfp}" class="profile-img" onclick="toggleDropdown()">
-                        <div class="dropdown" id="userDropdown">
-                            <div class="dropdown-header">
-                                <img src="${myProfile.avatar_url || defaultPfp}">
-                                <div><p>${escapeHTML(myProfile.nickname) || '익명'}</p><span>채널 관리</span></div>
-                            </div>
-                            <button class="dropdown-item" onclick="openProfileEdit()">프로필 수정</button>
-                            <button class="dropdown-item" onclick="signOut()">로그아웃</button>
-                        </div>
-                    </div>
-                `;
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <img src="${myProfile.avatar_url || defaultPfp}" class="profile-img">
+                        <span style="font-weight:600; font-size:14px;">${escapeHTML(myProfile.nickname)}</span>
+                        <button onclick="_client.auth.signOut()" style="background:none; border:none; color:var(--danger); font-weight:bold; font-size:12px;">로그아웃</button>
+                    </div>`;
             } else {
-                area.innerHTML = `<button class="btn-auth" onclick="toggleModal('authModal', true)">시작하기</button>`;
+                area.innerHTML = `<button class="btn-auth" onclick="openAuthModal()">로그인 / 가입</button>`;
             }
         }
 
-        function toggleDropdown() {
-            const el = document.getElementById('userDropdown');
-            el.style.display = el.style.display === 'block' ? 'none' : 'block';
+        function openAuthModal() {
+            document.getElementById('authModal').style.display = 'flex';
+            isSignupMode = false;
+            updateAuthUI();
         }
-        
-        document.addEventListener('click', (e) => {
-            if(myProfile && !e.target.closest('.profile-wrapper')) {
-                const el = document.getElementById('userDropdown');
-                if(el) el.style.display = 'none';
-            }
-        });
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-        function toggleModal(id, show) { document.getElementById(id).style.display = show ? 'flex' : 'none'; }
-        
-        function openProfileEdit() {
-            toggleDropdown();
-            toggleModal('profileModal', true);
-            document.getElementById('pfpPreview').src = myProfile?.avatar_url || defaultPfp;
-            document.getElementById('nickInput').value = myProfile?.nickname || '';
+        // 🚀 로그인 ↔ 회원가입 화면 전환 함수
+        function toggleAuthMode() {
+            isSignupMode = !isSignupMode;
+            updateAuthUI();
         }
 
-        function previewImage(input) {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = e => document.getElementById('pfpPreview').src = e.target.result;
-                reader.readAsDataURL(input.files[0]);
-            }
+        function updateAuthUI() {
+            document.getElementById('modalTitle').innerText = isSignupMode ? '1초 만에 회원가입' : '로그인';
+            document.getElementById('modalDesc').innerText = isSignupMode ? '아이디, 비번, 닉네임만 적으면 끝!' : '아이디와 비밀번호를 입력하세요.';
+            document.getElementById('nickGroup').style.display = isSignupMode ? 'block' : 'none';
+            document.getElementById('authSubmitBtn').innerText = isSignupMode ? '가입하기' : '로그인';
+            document.getElementById('authToggleBtn').innerText = isSignupMode ? '이미 계정이 있나요? 로그인' : '계정이 없나요? 회원가입';
         }
 
-        async function handleAuth(type) {
-            const email = document.getElementById('authEmail').value.trim();
-            const pw = document.getElementById('authPw').value.trim();
-            if (!email || !pw) return showToast("이메일과 비밀번호를 모두 입력해주세요.", true);
+        // 🚀 핵심: 이메일 대신 아이디로 처리하는 꼼수 로직
+        async function executeAuth() {
+            const idVal = document.getElementById('authId').value.trim();
+            const pwVal = document.getElementById('authPw').value.trim();
+            const nickVal = document.getElementById('authNick').value.trim();
+
+            if (!idVal || !pwVal) return showToast("아이디와 비밀번호를 꼭 써주세요!", true);
+            
+            // 꼼수: 유저가 쓴 아이디 뒤에 몰래 가짜 이메일 주소를 붙임
+            const dummyEmail = `${idVal}@entubefake.com`;
+
+            const btn = document.getElementById('authSubmitBtn');
+            btn.disabled = true; btn.innerText = "처리 중...";
 
             try {
-                if (type === 'signup') {
-                    const { error } = await _client.auth.signUp({ email, password: pw });
+                if (isSignupMode) {
+                    if (!nickVal) throw new Error("닉네임을 입력해주세요!");
+                    
+                    // 1. 수퍼베이스에 가입 (가짜 이메일 사용)
+                    const { data, error } = await _client.auth.signUp({ email: dummyEmail, password: pwVal });
                     if (error) throw error;
-                    showToast("계정이 생성되었습니다.");
-                    toggleModal('authModal', false);
+
+                    // 2. 가입하자마자 프로필 테이블에 닉네임 저장
+                    if (data.user) {
+                        await _client.from('profiles').update({ nickname: nickVal }).eq('id', data.user.id);
+                    }
+                    showToast("가입 성공! 환영합니다 🎉");
+                    closeModal('authModal');
+                    setTimeout(() => location.reload(), 500); // 닉네임 반영을 위해 새로고침
                 } else {
-                    const { error } = await _client.auth.signInWithPassword({ email, password: pw });
-                    if (error) throw error;
-                    showToast("로그인 성공");
-                    toggleModal('authModal', false);
+                    // 로그인 처리
+                    const { error } = await _client.auth.signInWithPassword({ email: dummyEmail, password: pwVal });
+                    if (error) throw new Error("아이디나 비밀번호가 틀렸습니다.");
+                    showToast("로그인 성공!");
+                    closeModal('authModal');
                 }
-            } catch(e) { showToast(e.message, true); }
-        }
-
-        async function signOut() {
-            await _client.auth.signOut();
-            showToast("안전하게 로그아웃 되었습니다.");
-            renderHeader();
-        }
-
-        async function saveProfile() {
-            const btn = document.getElementById('saveBtn');
-            const nick = document.getElementById('nickInput').value.trim();
-            const file = document.getElementById('pfpInput').files[0];
-            if (!nick) return showToast("닉네임은 필수입니다.", true);
-
-            btn.disabled = true; btn.innerText = "저장 중...";
-            let url = myProfile.avatar_url;
-
-            try {
-                if (file) {
-                    const path = `pfp_${Date.now()}.${file.name.split('.').pop()}`;
-                    const { error: upErr } = await _client.storage.from('avatars').upload(path, file);
-                    if (upErr) throw upErr;
-                    url = _client.storage.from('avatars').getPublicUrl(path).data.publicUrl;
-                }
-                const { error: dbErr } = await _client.from('profiles').update({ nickname: nick, avatar_url: url }).eq('id', myProfile.id);
-                if (dbErr) throw dbErr;
-
-                showToast("프로필이 성공적으로 업데이트되었습니다.");
-                setTimeout(() => location.reload(), 1000);
             } catch (err) {
-                showToast("저장 실패: " + err.message, true);
-                btn.disabled = false; btn.innerText = "변경사항 저장";
+                showToast(err.message, true);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = isSignupMode ? '가입하기' : '로그인';
             }
         }
 
         function timeAgo(dateString) {
-            const date = new Date(dateString);
-            const seconds = Math.floor((new Date() - date) / 1000);
-            let interval = seconds / 31536000;
-            if (interval > 1) return Math.floor(interval) + "년 전";
-            interval = seconds / 2592000;
-            if (interval > 1) return Math.floor(interval) + "개월 전";
-            interval = seconds / 86400;
-            if (interval > 1) return Math.floor(interval) + "일 전";
-            interval = seconds / 3600;
-            if (interval > 1) return Math.floor(interval) + "시간 전";
-            interval = seconds / 60;
-            if (interval > 1) return Math.floor(interval) + "분 전";
+            const seconds = Math.floor((new Date() - new Date(dateString)) / 1000);
+            const intervals = { 년:31536000, 개월:2592000, 일:86400, 시간:3600, 분:60 };
+            for (let [name, secs] of Object.entries(intervals)) {
+                if (seconds >= secs) return Math.floor(seconds / secs) + `${name} 전`;
+            }
             return "방금 전";
         }
 
         async function loadVideos(searchQuery = '') {
             const grid = document.getElementById('videoGrid');
-            
-            // 스켈레톤 로딩 (JS 내부에서 처리)
             grid.innerHTML = Array(8).fill().map(() => `
                 <div class="video-card">
                     <div class="thumbnail skeleton"></div>
-                    <div class="details">
-                        <div class="details-avatar skeleton"></div>
-                        <div style="flex:1;">
-                            <div class="skeleton" style="height: 18px; width: 85%; margin-bottom: 8px;"></div>
-                            <div class="skeleton" style="height: 14px; width: 50%;"></div>
-                        </div>
-                    </div>
+                    <div class="details"><div class="details-avatar skeleton"></div><div style="flex:1;"><div class="skeleton" style="height:18px;width:85%;margin-bottom:8px;"></div><div class="skeleton" style="height:14px;width:50%;"></div></div></div>
                 </div>`).join('');
 
             let query = _client.from('posts').select('*, profiles(nickname, avatar_url)').order('created_at', { ascending: false });
             if (searchQuery) query = query.ilike('title', `%${searchQuery}%`);
             
-            const { data: videos, error } = await query;
-            if (error) {
-                showToast("데이터를 불러오는데 실패했습니다.", true);
-                return;
-            }
-
+            const { data: videos } = await query;
             grid.innerHTML = '';
-            if(!videos || videos.length === 0) {
-                grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 60px; color:var(--text-secondary); font-size: 16px;">해당하는 영상이 없습니다.</div>`;
-                return;
-            }
+            
+            if(!videos || videos.length === 0) return grid.innerHTML = `<p style="grid-column:1/-1;text-align:center;color:#6c757d;">영상이 없습니다.</p>`;
 
             videos.forEach(v => {
-                const rawNick = v.profiles?.nickname || '알 수 없음';
+                const safeTitle = escapeHTML(v.title || '제목 없음');
+                const safeNick = escapeHTML(v.profiles?.nickname || '익명');
                 const pfp = v.profiles?.avatar_url || defaultPfp;
                 const viewMock = Math.floor(Math.random() * 900) + 10;
-                const time = v.created_at ? timeAgo(v.created_at) : '방금 전';
-                
-                // 보안: XSS 방어 적용
-                const safeTitle = escapeHTML(v.title);
-                const safeNick = escapeHTML(rawNick);
                 
                 const div = document.createElement('div');
                 div.className = 'video-card';
@@ -389,7 +260,7 @@
                         <img src="${pfp}" class="details-avatar">
                         <div class="meta">
                             <h3>${safeTitle}</h3>
-                            <p>${safeNick}<br>조회수 ${viewMock}회 • ${time}</p>
+                            <p>${safeNick}<br>조회수 ${viewMock}회 • ${timeAgo(v.created_at)}</p>
                         </div>
                     </div>`;
                 grid.appendChild(div);
@@ -398,5 +269,7 @@
 
         function searchVideos() { loadVideos(document.getElementById('searchInput').value.trim()); }
     </script>
+</body>
+</html>
 </body>
 </html>
