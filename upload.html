@@ -3,203 +3,437 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Entube - 영상 업로드</title>
+    <title>Entube - 프리미엄 서비스</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* [1] 빤쭌이 취향 저격 미니멀 테마 */
+        /* [1] 전역 디자인 시스템 */
         :root { 
-            --bg-base: #f9fafb; --bg-surface: #ffffff; --text-primary: #111827; 
-            --text-secondary: #6b7280; --brand-color: #2563eb; --divider: #e5e7eb; 
-            --radius-lg: 20px; --radius-md: 12px;
+            --primary: #2563eb; --primary-soft: #eff6ff;
+            --bg-base: #f9fafb; --bg-card: #ffffff;
+            --text-main: #111827; --text-sub: #6b7280;
+            --divider: #e5e7eb; --danger: #ef4444;
+            --radius-xl: 24px; --radius-lg: 16px; --radius-md: 12px;
+            --shadow: 0 10px 25px rgba(0,0,0,0.03);
         }
-        body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--bg-base); color: var(--text-primary); margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; letter-spacing: -0.3px; }
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+        body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--bg-base); color: var(--text-main); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; letter-spacing: -0.4px; }
+        button { cursor: pointer; transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1); border: none; font-family: inherit; }
+        button:active { transform: scale(0.96); }
+        input { font-family: inherit; }
 
-        /* [2] 헤더 */
-        .header { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0 40px; height: 72px; background: rgba(255,255,255,0.8); backdrop-filter: blur(10px); border-bottom: 1px solid var(--divider); position: sticky; top: 0; z-index: 100; }
-        .logo { font-size: 24px; font-weight: 800; cursor: pointer; text-decoration: none; color: black; letter-spacing: -1px; }
-        .logo span { color: var(--brand-color); }
+        /* [2] 프리미엄 헤더 */
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 0 40px; height: 72px; background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid var(--divider); }
+        .logo { font-size: 26px; font-weight: 900; color: var(--text-main); cursor: pointer; letter-spacing: -1.2px; text-decoration: none; }
+        .logo span { color: var(--primary); }
+        
+        .search-container { flex: 0 1 500px; position: relative; }
+        .search-box { display: flex; background: var(--bg-base); border-radius: var(--radius-xl); border: 1.5px solid transparent; transition: 0.2s; overflow: hidden; }
+        .search-box:focus-within { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 4px rgba(37,99,235,0.08); }
+        .search-box input { flex: 1; padding: 12px 24px; background: transparent; border: none; outline: none; font-size: 15px; }
+        .search-box button { padding: 0 20px; background: transparent; color: var(--text-sub); font-weight: 700; }
 
-        /* [3] 업로드 카드 */
-        .upload-card { background: var(--bg-surface); width: 90%; max-width: 550px; padding: 48px; border-radius: var(--radius-lg); margin: 60px 0; box-shadow: 0 20px 50px rgba(0,0,0,0.05); border: 1px solid var(--divider); }
-        h1 { font-size: 28px; font-weight: 800; margin: 0 0 12px 0; text-align: center; letter-spacing: -1px; }
-        .desc { color: var(--text-secondary); text-align: center; margin-bottom: 40px; font-size: 15px; }
+        .header-right { display: flex; gap: 16px; align-items: center; }
+        .btn-upload { background: var(--primary); color: white; padding: 10px 22px; border-radius: var(--radius-xl); font-weight: 700; font-size: 14px; box-shadow: 0 4px 12px rgba(37,99,235,0.2); }
+        .user-profile { display: flex; align-items: center; gap: 12px; padding: 6px; border-radius: 30px; transition: 0.2s; cursor: pointer; }
+        .user-profile:hover { background: var(--bg-hover); }
+        .profile-img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 1px solid var(--divider); }
 
-        .form-group { margin-bottom: 28px; }
-        label { display: block; font-size: 14px; font-weight: 700; margin-bottom: 10px; color: var(--text-primary); }
-        input[type="text"] { width: 100%; padding: 16px; border: 1px solid var(--divider); border-radius: var(--radius-md); font-size: 15px; outline: none; background: var(--bg-base); transition: all 0.2s; }
-        input[type="text"]:focus { border-color: var(--brand-color); background: white; box-shadow: 0 0 0 4px rgba(37,99,235,0.1); }
+        /* [3] 사이드바 & 메인 영역 */
+        .app-body { display: flex; flex: 1; overflow: hidden; }
+        .sidebar { width: 260px; padding: 24px 16px; background: #fff; border-right: 1px solid var(--divider); display: flex; flex-direction: column; }
+        .sidebar-menu { flex: 1; }
+        .menu-item { display: flex; align-items: center; gap: 14px; padding: 14px 20px; font-weight: 600; font-size: 15px; color: var(--text-sub); border-radius: var(--radius-md); margin-bottom: 4px; cursor: pointer; }
+        .menu-item.active { background: var(--primary-soft); color: var(--primary); }
+        .menu-item:hover:not(.active) { background: var(--bg-base); color: var(--text-main); }
+        
+        .main-content { flex: 1; overflow-y: auto; scroll-behavior: smooth; }
+        .cat-bar { display: flex; gap: 10px; padding: 16px 40px; background: rgba(255,255,255,0.8); position: sticky; top: 0; z-index: 10; border-bottom: 1px solid var(--divider); overflow-x: auto; scrollbar-width: none; }
+        .chip { padding: 8px 18px; border-radius: 20px; border: 1px solid var(--divider); background: #fff; font-weight: 600; font-size: 14px; white-space: nowrap; }
+        .chip.active { background: var(--text-main); color: #fff; border-color: var(--text-main); }
 
-        /* 커스텀 파일 업로드 박스 */
-        .file-drop-zone { border: 2px dashed var(--divider); padding: 50px 20px; border-radius: var(--radius-md); text-align: center; cursor: pointer; transition: 0.2s; background: var(--bg-base); position: relative; overflow: hidden; }
-        .file-drop-zone:hover { border-color: var(--brand-color); background: #eff6ff; }
-        .file-drop-zone.active { border-color: var(--brand-color); background: #eff6ff; }
-        .file-drop-zone p { margin: 0; font-size: 15px; font-weight: 700; color: var(--brand-color); }
-        .file-drop-zone span { font-size: 12px; color: var(--text-secondary); display: block; margin-top: 8px; }
-        #videoInput { display: none; }
+        /* [4] 영상 그리드 시스템 */
+        .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 32px; padding: 32px 40px; }
+        .video-card { position: relative; transition: 0.3s; }
+        .thumb-wrap { position: relative; aspect-ratio: 16/9; border-radius: var(--radius-lg); overflow: hidden; background: #000; box-shadow: var(--shadow); }
+        .thumb-wrap video { width: 100%; height: 100%; object-fit: cover; }
+        .btn-delete-post { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); color: #fff; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 800; opacity: 0; transition: 0.2s; }
+        .video-card:hover .btn-delete-post { opacity: 1; }
+        .video-card:hover .thumb-wrap { transform: translateY(-4px); }
+        
+        .video-info { display: flex; gap: 14px; margin-top: 16px; }
+        .video-info h3 { margin: 0 0 6px 0; font-size: 16px; font-weight: 700; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; }
+        .video-info p { margin: 0; font-size: 13.5px; color: var(--text-sub); }
 
-        .btn-upload { width: 100%; padding: 18px; background: var(--brand-color); color: white; border: none; border-radius: var(--radius-md); font-size: 16px; font-weight: 800; margin-top: 10px; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(37,99,235,0.3); }
-        .btn-upload:disabled { background: #cbd5e1; box-shadow: none; cursor: not-allowed; }
-        .btn-upload:hover:not(:disabled) { background: #1d4ed8; transform: translateY(-2px); }
+        /* [5] 플레이어 모달 (애플 스타일) */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 2000; justify-content: center; align-items: flex-start; overflow-y: auto; padding: 60px 0; }
+        .modal-body { background: #fff; width: 92%; max-width: 1100px; border-radius: 24px; overflow: hidden; animation: slideUp 0.4s ease-out; }
+        @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
+        .vid-frame video { width: 100%; aspect-ratio: 16/9; background: #000; display: block; }
+        .vid-details { padding: 32px 40px; border-bottom: 1px solid var(--divider); }
+        .vid-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+        .creator-info { display: flex; align-items: center; gap: 16px; }
+        .btn-sub { background: var(--text-main); color: #fff; padding: 10px 24px; border-radius: 30px; font-weight: 700; font-size: 14px; }
+        .btn-sub.active { background: var(--divider); color: var(--text-sub); }
 
-        /* 프로그레스 로딩 바 */
-        .progress-container { display: none; margin-top: 24px; }
-        .progress-label { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; margin-bottom: 10px; }
-        .progress-bar { width: 100%; height: 10px; background: #e5e7eb; border-radius: 5px; overflow: hidden; }
-        .progress-fill { width: 0%; height: 100%; background: var(--brand-color); transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .comment-section { padding: 40px; background: #fafafa; }
+        .comment-input { display: flex; gap: 16px; margin-bottom: 32px; }
+        .comment-input input { flex: 1; padding: 14px 20px; border: 1.5px solid var(--divider); border-radius: var(--radius-md); font-size: 15px; outline: none; }
+        .comment-input input:focus { border-color: var(--primary); }
 
-        /* 토스트 알림 */
-        .toast-container { position: fixed; bottom: 30px; right: 30px; z-index: 1000; }
-        .toast { background: #111; color: white; padding: 16px 28px; border-radius: 12px; font-size: 14px; font-weight: 600; opacity: 0; transform: translateY(20px); transition: 0.3s; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        /* [6] 공통 팝업 모달 */
+        .popup-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 3000; justify-content: center; align-items: center; }
+        .popup-card { background: #fff; padding: 48px 40px; border-radius: 24px; width: 400px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.15); }
+        .form-group { margin-bottom: 16px; text-align: left; }
+        .form-group label { display: block; font-size: 13px; font-weight: 700; color: var(--text-sub); margin-bottom: 6px; }
+        .form-group input { width: 100%; padding: 14px; border: 1.5px solid var(--divider); border-radius: var(--radius-md); font-size: 15px; }
+        .btn-full { width: 100%; padding: 16px; background: var(--primary); color: #fff; border-radius: var(--radius-md); font-weight: 800; font-size: 16px; margin-top: 10px; }
+
+        .toast-container { position: fixed; bottom: 32px; right: 32px; z-index: 5000; display: flex; flex-direction: column; gap: 12px; }
+        .toast { background: #111; color: #fff; padding: 16px 28px; border-radius: var(--radius-md); font-weight: 600; opacity: 0; transform: translateY(20px); transition: 0.3s; }
         .toast.show { opacity: 1; transform: translateY(0); }
     </style>
 </head>
 <body>
+    <div class="toast-container" id="toastBox"></div>
 
     <header class="header">
-        <a href="index.html" class="logo">Entube<span>.</span></a>
-        <div id="userBadge" style="font-weight: 700; font-size: 14px; color: var(--brand-color);">내 채널</div>
+        <a href="#" class="logo" onclick="location.reload()">En<span>tube.</span></a>
+        <div class="search-container">
+            <div class="search-box">
+                <input type="text" id="kwInput" placeholder="보고 싶은 영상을 검색해 보세요" onkeypress="if(event.key==='Enter') searchPosts()">
+                <button onclick="searchPosts()">검색</button>
+            </div>
+        </div>
+        <div class="header-right" id="headerAuth">
+            <button class="btn-upload" onclick="openPopup('authPopup')">시작하기</button>
+        </div>
     </header>
 
-    <div class="upload-card">
-        <h1>영상 업로드</h1>
-        <p class="desc">새로운 영감을 친구들과 공유해 보세요.</p>
+    <div class="app-body">
+        <aside class="sidebar">
+            <nav class="sidebar-menu">
+                <div class="menu-item active" id="menu-home" onclick="navTo('home')">🏠 홈</div>
+                <div class="menu-item" id="menu-sub" onclick="navTo('sub')">🔔 구독 중</div>
+                <div class="menu-item" id="menu-liked" onclick="navTo('liked')">❤️ 좋아요 표시한 영상</div>
+                <div style="height: 1px; background: var(--divider); margin: 20px 0;"></div>
+                <div class="menu-item" id="menu-mine" onclick="navTo('mine')">👤 내 영상 관리</div>
+            </nav>
+            <div style="padding: 20px; font-size: 12px; color: var(--text-sub);">© 2026 Entube Premium</div>
+        </aside>
 
-        <div class="form-group">
-            <label>비디오 선택 (MP4)</label>
-            <label for="videoInput" class="file-drop-zone" id="dropZone">
-                <p id="fileLabel">여기를 클릭하거나 파일을 끌어다 놓으세요</p>
-                <span id="fileSubLabel">최대 용량 50MB 미만 권장</span>
-            </label>
-            <input type="file" id="videoInput" accept="video/mp4,video/x-m4v,video/*">
-        </div>
+        <main class="main-content">
+            <div class="cat-bar" id="catBar">
+                </div>
+            <div class="video-grid" id="vGrid">
+                </div>
+        </main>
+    </div>
 
-        <div class="form-group">
-            <label>영상 제목</label>
-            <input type="text" id="vTitle" placeholder="시청자의 눈길을 끄는 제목을 입력하세요">
-        </div>
-
-        <div class="form-group">
-            <label>카테고리 (직접 입력)</label>
-            <input type="text" id="vCat" placeholder="예: 게임, 음악, 빤쭌일상 등">
-        </div>
-
-        <button class="btn-upload" id="submitBtn" onclick="handleUpload()">업로드 시작하기</button>
-
-        <div class="progress-container" id="progContainer">
-            <div class="progress-label">
-                <span id="progStatus">파일 전송 중...</span>
-                <span id="progPercent">0%</span>
+    <div id="playerModal" class="modal" onclick="if(event.target==this) closePlayer()">
+        <div class="modal-body">
+            <div class="vid-frame">
+                <video id="playerVid" controls autoplay></video>
             </div>
-            <div class="progress-bar">
-                <div class="progress-fill" id="progFill"></div>
+            <div class="vid-details">
+                <div class="vid-header">
+                    <div>
+                        <h2 id="vidTitle" style="margin:0 0 12px 0; font-size:24px; letter-spacing:-0.8px;">영상 제목</h2>
+                        <div class="creator-info">
+                            <img id="creatorImg" src="" style="width:44px; height:44px; border-radius:50%; border:1px solid #eee;">
+                            <div>
+                                <div id="creatorNick" style="font-weight:800; font-size:16px;">닉네임</div>
+                                <div id="subCount" style="font-size:13px; color:var(--text-sub);">구독자 0명</div>
+                            </div>
+                            <button id="subBtn" class="btn-sub" onclick="handleSub()">구독</button>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:12px;">
+                        <button onclick="handleLike()" style="background:var(--bg-base); padding:12px 24px; border-radius:30px; font-weight:800; display:flex; align-items:center; gap:8px;">👍 <span id="likeCount">0</span></button>
+                        <button onclick="closePlayer()" style="background:#eee; padding:12px; border-radius:50%; font-weight:900;">✕</button>
+                    </div>
+                </div>
+            </div>
+            <div class="comment-section">
+                <div class="comment-input">
+                    <input type="text" id="cmtInput" placeholder="댓글을 입력해 보세요...">
+                    <button class="btn-upload" onclick="sendComment()">등록</button>
+                </div>
+                <div id="cmtList" style="display:flex; flex-direction:column; gap:24px;"></div>
             </div>
         </div>
     </div>
 
-    <div class="toast-container" id="toastBox"></div>
+    <div id="authPopup" class="popup-overlay">
+        <div class="popup-card">
+            <h2 id="authTitle">반갑습니다!</h2>
+            <p id="authDesc" style="color:var(--text-sub); margin-bottom:30px;">아이디와 비밀번호를 입력하세요.</p>
+            <div class="form-group">
+                <label>아이디</label>
+                <input type="text" id="userId" placeholder="영문/숫자 아이디">
+            </div>
+            <div class="form-group">
+                <label>비밀번호</label>
+                <input type="password" id="userPw" placeholder="6자 이상 비밀번호">
+            </div>
+            <div class="form-group" id="nickGroup" style="display:none;">
+                <label>닉네임</label>
+                <input type="text" id="userNick" placeholder="사용할 닉네임">
+            </div>
+            <button class="btn-full" onclick="processAuth()">확인</button>
+            <button onclick="toggleAuthMode()" style="background:none; color:var(--primary); font-weight:700; margin-top:20px; text-decoration:underline;">회원가입/로그인 전환</button>
+            <button onclick="closePopup('authPopup')" style="display:block; margin:20px auto 0; background:none; color:#aaa; font-size:13px;">취소</button>
+        </div>
+    </div>
+
+    <div id="profPopup" class="popup-overlay">
+        <div class="popup-card">
+            <h2>프로필 설정</h2>
+            <p style="color:var(--text-sub); margin-bottom:30px;">닉네임을 자유롭게 변경하세요.</p>
+            <div class="form-group">
+                <label>새 닉네임</label>
+                <input type="text" id="editNick" placeholder="닉네임 입력">
+            </div>
+            <button class="btn-full" onclick="saveProfile()">저장하기</button>
+            <button onclick="closePopup('profPopup')" style="background:none; color:#aaa; margin-top:15px;">취소</button>
+        </div>
+    </div>
 
     <script>
+        /* [7] 자바스크립트 엔진 */
         const supabaseUrl = 'https://kzchubdwrkcpmuempgrg.supabase.co';
         const supabaseKey = 'sb_publishable_MyFF5Xln3fWLvTqMx2CFNA_obZtoask'; 
         const _client = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        let myProfile = null;
+        let my = null; // 로그인 정보
+        let isJoin = false;
+        let nowVideo = null;
+        let nowMenu = 'home';
+        let nowCat = '전체';
+        let mySubs = [];
+        const defPfp = 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png';
 
-        function showToast(msg) {
-            const t = document.createElement('div'); t.className = 'toast'; t.innerText = msg;
-            document.getElementById('toastBox').appendChild(t);
-            setTimeout(()=>t.classList.add('show'), 10);
+        function safe(s) { return s ? String(s).replace(/[&<>'"]/g, t => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[t] || t)) : ''; }
+        function toast(m) {
+            const b = document.getElementById('toastBox');
+            const t = document.createElement('div'); t.className = 'toast'; t.innerText = m;
+            b.appendChild(t); setTimeout(()=>t.classList.add('show'), 10);
             setTimeout(()=>{t.classList.remove('show'); setTimeout(()=>t.remove(), 300);}, 3000);
         }
+        function openPopup(id) { document.getElementById(id).style.display = 'flex'; }
+        function closePopup(id) { document.getElementById(id).style.display = 'none'; }
 
-        // 로그인 체크 (안 되어 있으면 쫓아냄!)
-        async function checkUser() {
+        async function boot() {
             const { data: { session } } = await _client.auth.getSession();
-            if (!session) {
-                alert("로그인이 필요한 서비스입니다! 메인으로 이동합니다.");
-                location.href = 'index.html';
-                return;
+            if (session) {
+                const { data } = await _client.from('profiles').select('*').eq('id', session.user.id).single();
+                my = data || { id: session.user.id, nickname: '익명', avatar_url: defPfp };
+                await fetchSubs();
             }
-            const { data } = await _client.from('profiles').select('nickname').eq('id', session.user.id).single();
-            myProfile = { id: session.user.id, nickname: data?.nickname || '익명' };
-            document.getElementById('userBadge').innerText = `${myProfile.nickname}님의 채널`;
+            drawHeader();
+            loadCats();
+            drawVideos();
         }
 
-        // 파일 선택 시 이름 바로 보여주기
-        document.getElementById('videoInput').onchange = function(e) {
-            const file = e.target.files[0];
-            if(file) {
-                document.getElementById('fileLabel').innerText = `선택됨: ${file.name}`;
-                document.getElementById('fileSubLabel').innerText = `${(file.size / (1024*1024)).toFixed(2)} MB`;
-                document.getElementById('dropZone').style.borderColor = "var(--brand-color)";
+        async function fetchSubs() {
+            const { data } = await _client.from('subscriptions').select('creator_id').eq('subscriber_id', my.id);
+            mySubs = data.map(s => s.creator_id);
+        }
+
+        function drawHeader() {
+            const area = document.getElementById('headerAuth');
+            if (my) {
+                area.innerHTML = `
+                    <button class="btn-upload" onclick="location.href='upload.html'">영상 업로드</button>
+                    <div class="user-profile" onclick="openPopup('profPopup')">
+                        <img src="${my.avatar_url || defPfp}" class="profile-img">
+                        <div style="display:flex; flex-direction:column;">
+                            <span style="font-weight:800; font-size:14px;">${safe(my.nickname)}</span>
+                            <button onclick="event.stopPropagation(); _client.auth.signOut().then(()=>location.reload())" style="background:none; color:var(--danger); font-size:11px; padding:0; text-align:left; font-weight:700;">로그아웃</button>
+                        </div>
+                    </div>`;
+                document.getElementById('editNick').value = my.nickname;
+            } else {
+                area.innerHTML = `<button class="btn-upload" onclick="openPopup('authPopup')">시작하기</button>`;
             }
-        };
+        }
 
-        // 🚀 진짜 업로드 로직
-        async function handleUpload() {
-            const file = document.getElementById('videoInput').files[0];
-            const title = document.getElementById('vTitle').value.trim();
-            const category = document.getElementById('vCat').value.trim() || '일반';
+        async function saveProfile() {
+            const n = document.getElementById('editNick').value.trim();
+            if(!n) return toast("닉네임을 적어주세요!");
+            const { error } = await _client.from('profiles').update({ nickname: n }).eq('id', my.id);
+            if(!error) { toast("변경 성공!"); location.reload(); }
+        }
 
-            if (!file || !title) return showToast("파일과 제목을 모두 채워주세요!");
+        function toggleAuthMode() {
+            isJoin = !isJoin;
+            document.getElementById('authTitle').innerText = isJoin ? '환영합니다!' : '다시 오셨군요!';
+            document.getElementById('nickGroup').style.display = isJoin ? 'block' : 'none';
+        }
 
-            const btn = document.getElementById('submitBtn');
-            const prog = document.getElementById('progContainer');
-            const fill = document.getElementById('progFill');
-            const per = document.getElementById('progPercent');
-            const stat = document.getElementById('progStatus');
-
-            btn.disabled = true;
-            btn.innerText = "처리 중...";
-            prog.style.display = 'block';
+        async function processAuth() {
+            const id = document.getElementById('userId').value.trim();
+            const pw = document.getElementById('userPw').value.trim();
+            const nick = document.getElementById('userNick').value.trim();
+            const email = `${id}@entubefake.com`;
 
             try {
-                // 1. Storage에 영상 파일 업로드
-                const fileExt = file.name.split('.').pop();
-                const fileName = `entube_${Date.now()}.${fileExt}`;
-                
-                stat.innerText = "서버로 영상 전송 중...";
-                const { data: upData, error: upErr } = await _client.storage
-                    .from('videos')
-                    .upload(fileName, file);
-
-                if (upErr) throw upErr;
-
-                // 절반 성공! (로딩바 애니메이션)
-                fill.style.width = '60%'; per.innerText = '60%';
-                stat.innerText = "데이터베이스 등록 중...";
-
-                // 2. 파일의 Public URL 따오기
-                const { data: { publicUrl } } = _client.storage.from('videos').getPublicUrl(fileName);
-
-                // 3. DB에 정보 저장 (author_id 꼭 넣어줘야 함!)
-                const { error: dbErr } = await _client.from('posts').insert([{
-                    title: title,
-                    video_url: publicUrl,
-                    category: category,
-                    author_id: myProfile.id,
-                    likes: 0
-                }]);
-
-                if (dbErr) throw dbErr;
-
-                // 100% 완료!
-                fill.style.width = '100%'; per.innerText = '100%';
-                stat.innerText = "업로드 완료!";
-                showToast("성공적으로 업로드되었습니다! 🎉");
-                
-                setTimeout(() => location.href = 'index.html', 1500);
-
-            } catch (err) {
-                alert("업로드 실패: " + err.message);
-                btn.disabled = false;
-                btn.innerText = "업로드 시작하기";
-                prog.style.display = 'none';
-            }
+                if (isJoin) {
+                    const { data, error } = await _client.auth.signUp({ email, password: pw });
+                    if (error) throw error;
+                    if (data.user) await _client.from('profiles').update({ nickname: nick }).eq('id', data.user.id);
+                    toast("가입 성공! 로그인하세요."); location.reload();
+                } else {
+                    const { error } = await _client.auth.signInWithPassword({ email, password: pw });
+                    if (error) throw new Error("정보를 다시 확인하세요.");
+                    location.reload();
+                }
+            } catch(e) { alert(e.message); }
         }
 
-        checkUser();
+        async function loadCats() {
+            const { data } = await _client.from('posts').select('category');
+            const items = ['전체', ...new Set(data.map(v => v.category))];
+            const bar = document.getElementById('catBar');
+            bar.innerHTML = items.map(c => `<button class="chip ${nowCat===c?'active':''}" onclick="setCategory('${c}')">${c}</button>`).join('');
+        }
+
+        function setCategory(c) { nowCat = c; loadCats(); drawVideos(); }
+        function navTo(m) {
+            nowMenu = m;
+            document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
+            document.getElementById('menu-' + m).classList.add('active');
+            drawVideos();
+        }
+
+        async function drawVideos(search = '') {
+            let q = _client.from('posts').select('*, profiles(nickname, avatar_url)').order('created_at', {ascending: false});
+            
+            if (nowMenu === 'sub') {
+                if (!my) return toast("로그인이 필요합니다!");
+                if (mySubs.length === 0) return document.getElementById('vGrid').innerHTML = "<p>구독 중인 채널이 없어요.</p>";
+                q = q.in('author_id', mySubs);
+            } else if (nowMenu === 'mine') {
+                if (!my) return toast("로그인이 필요합니다!");
+                q = q.eq('author_id', my.id);
+            } else if (nowMenu === 'liked') {
+                toast("좋아요 목록은 개발 중입니다!");
+            }
+
+            if (nowCat !== '전체') q = q.eq('category', nowCat);
+            if (search) q = q.ilike('title', `%${search}%`);
+
+            const { data: list } = await q;
+            const grid = document.getElementById('vGrid');
+            grid.innerHTML = '';
+            
+            if(!list?.length) return grid.innerHTML = "<p style='grid-column:1/-1; text-align:center; padding:100px; color:#aaa;'>영상이 없습니다.</p>";
+
+            list.forEach(v => {
+                const isMine = my && my.id === v.author_id;
+                const card = document.createElement('div');
+                card.className = 'video-card';
+                card.innerHTML = `
+                    <div class="thumb-wrap">
+                        <video src="${v.video_url}" onmouseover="this.play()" onmouseout="this.pause();this.currentTime=0;" muted loop></video>
+                        ${isMine ? `<button class="btn-delete-post" onclick="event.stopPropagation(); killPost('${v.id}')">삭제</button>` : ''}
+                    </div>
+                    <div class="video-info" onclick='popPlayer(${JSON.stringify(v).replace(/'/g, "&apos;")})'>
+                        <img src="${v.profiles?.avatar_url || defPfp}" class="meta-img" style="width:36px; height:36px; border-radius:50%;">
+                        <div class="meta-info">
+                            <h3>${safe(v.title)}</h3>
+                            <p>${safe(v.profiles?.nickname)}<br>👍 ${v.likes || 0} • ${time(v.created_at)}</p>
+                        </div>
+                    </div>`;
+                grid.appendChild(card);
+            });
+        }
+
+        async function killPost(id) {
+            if(!confirm("진짜 삭제할까요?")) return;
+            const { error } = await _client.from('posts').delete().eq('id', id);
+            if(!error) { toast("삭제 완료"); drawVideos(); }
+        }
+
+        function time(d) {
+            const s = Math.floor((new Date() - new Date(d)) / 1000);
+            const i = { 년:31536000, 달:2592000, 일:86400, 시간:3600, 분:60 };
+            for (let [n, sec] of Object.entries(i)) if (s >= sec) return Math.floor(s / sec) + `${n} 전`;
+            return "방금 전";
+        }
+
+        async function popPlayer(v) {
+            nowVideo = v;
+            document.getElementById('playerModal').style.display = 'flex';
+            document.getElementById('playerVid').src = v.video_url;
+            document.getElementById('vidTitle').innerText = safe(v.title);
+            document.getElementById('creatorNick').innerText = safe(v.profiles?.nickname);
+            document.getElementById('creatorImg').src = v.profiles?.avatar_url || defPfp;
+            document.getElementById('likeCount').innerText = v.likes || 0;
+            
+            // 구독 상태 업데이트
+            const b = document.getElementById('subBtn');
+            if(my && my.id === v.author_id) { b.style.display = 'none'; }
+            else {
+                b.style.display = 'block';
+                const isSub = mySubs.includes(v.author_id);
+                b.innerText = isSub ? "구독 중" : "구독";
+                b.className = isSub ? "btn-sub active" : "btn-sub";
+            }
+            getCmts(v.id);
+        }
+
+        function closePlayer() { document.getElementById('playerModal').style.display = 'none'; document.getElementById('playerVid').pause(); }
+
+        async function handleLike() {
+            if(!my) return toast("로그인 하세요!");
+            const n = (nowVideo.likes || 0) + 1;
+            await _client.from('posts').update({ likes: n }).eq('id', nowVideo.id);
+            document.getElementById('likeCount').innerText = n;
+            nowVideo.likes = n;
+        }
+
+        async function handleSub() {
+            if(!my) return toast("로그인 하세요!");
+            const cid = nowVideo.author_id;
+            const isSub = mySubs.includes(cid);
+            if(isSub) {
+                await _client.from('subscriptions').delete().eq('subscriber_id', my.id).eq('creator_id', cid);
+                toast("구독 취소");
+            } else {
+                await _client.from('subscriptions').insert([{ subscriber_id: my.id, creator_id: cid }]);
+                toast("구독 시작! ❤️");
+            }
+            await fetchSubs();
+            popPlayer(nowVideo);
+        }
+
+        async function getCmts(pid) {
+            const { data } = await _client.from('comments').select('*, profiles(nickname)').eq('post_id', pid).order('created_at', {ascending: true});
+            const l = document.getElementById('cmtList');
+            l.innerHTML = data?.length ? '' : '<p style="color:#aaa;">첫 댓글을 남겨보세요!</p>';
+            data?.forEach(c => {
+                const div = document.createElement('div');
+                div.innerHTML = `<div style="display:flex; gap:12px;">
+                    <b style="font-size:14px;">${safe(c.profiles?.nickname)}</b>
+                    <span style="font-size:12px; color:#aaa;">${time(c.created_at)}</span>
+                </div>
+                <div style="font-size:15px; margin-top:4px;">${safe(c.content)}</div>`;
+                l.appendChild(div);
+            });
+        }
+
+        async function sendComment() {
+            if(!my) return toast("로그인 필요!");
+            const c = document.getElementById('cmtInput').value.trim();
+            if(!c) return;
+            const { error } = await _client.from('comments').insert([{ post_id: nowVideo.id, author_id: my.id, content: c }]);
+            if(!error) { document.getElementById('cmtInput').value = ''; getCmts(nowVideo.id); }
+        }
+
+        function searchPosts() { drawVideos(document.getElementById('kwInput').value.trim()); }
+
+        boot();
     </script>
 </body>
 </html>
