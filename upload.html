@@ -6,97 +6,98 @@
     <title>Entube - 영상 업로드</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+        /* [1] 빤쭌이 취향 저격 미니멀 테마 */
         :root { 
-            --bg-base: #f9fafb; --bg-surface: #ffffff; --bg-hover: #f3f4f6; 
-            --text-primary: #111827; --text-secondary: #6b7280; 
-            --brand-color: #2563eb; --divider: #e5e7eb; --radius-lg: 16px;
+            --bg-base: #f9fafb; --bg-surface: #ffffff; --text-primary: #111827; 
+            --text-secondary: #6b7280; --brand-color: #2563eb; --divider: #e5e7eb; 
+            --radius-lg: 20px; --radius-md: 12px;
         }
-        body { font-family: 'Pretendard', sans-serif; background: var(--bg-base); color: var(--text-primary); margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--bg-base); color: var(--text-primary); margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; letter-spacing: -0.3px; }
         * { box-sizing: border-box; }
-        
-        .header { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0 32px; height: 72px; background: white; border-bottom: 1px solid var(--divider); position: sticky; top: 0; }
-        .logo { font-size: 24px; font-weight: 800; cursor: pointer; text-decoration: none; color: black; }
+
+        /* [2] 헤더 */
+        .header { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0 40px; height: 72px; background: rgba(255,255,255,0.8); backdrop-filter: blur(10px); border-bottom: 1px solid var(--divider); position: sticky; top: 0; z-index: 100; }
+        .logo { font-size: 24px; font-weight: 800; cursor: pointer; text-decoration: none; color: black; letter-spacing: -1px; }
         .logo span { color: var(--brand-color); }
 
-        .upload-container { background: white; width: 100%; max-width: 600px; padding: 48px; border-radius: var(--radius-lg); margin-top: 60px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
-        h1 { font-size: 28px; font-weight: 800; margin: 0 0 8px 0; text-align: center; }
-        p { color: var(--text-secondary); text-align: center; margin-bottom: 40px; }
+        /* [3] 업로드 카드 */
+        .upload-card { background: var(--bg-surface); width: 90%; max-width: 550px; padding: 48px; border-radius: var(--radius-lg); margin: 60px 0; box-shadow: 0 20px 50px rgba(0,0,0,0.05); border: 1px solid var(--divider); }
+        h1 { font-size: 28px; font-weight: 800; margin: 0 0 12px 0; text-align: center; letter-spacing: -1px; }
+        .desc { color: var(--text-secondary); text-align: center; margin-bottom: 40px; font-size: 15px; }
 
-        .form-group { margin-bottom: 24px; }
-        label { display: block; font-size: 14px; font-weight: 700; margin-bottom: 8px; color: var(--text-primary); }
-        input[type="text"], select { width: 100%; padding: 14px; border: 1px solid var(--divider); border-radius: 12px; font-size: 15px; outline: none; background: var(--bg-base); transition: 0.2s; }
-        input[type="text"]:focus, select:focus { border-color: var(--brand-color); background: white; box-shadow: 0 0 0 4px rgba(37,99,235,0.1); }
+        .form-group { margin-bottom: 28px; }
+        label { display: block; font-size: 14px; font-weight: 700; margin-bottom: 10px; color: var(--text-primary); }
+        input[type="text"] { width: 100%; padding: 16px; border: 1px solid var(--divider); border-radius: var(--radius-md); font-size: 15px; outline: none; background: var(--bg-base); transition: all 0.2s; }
+        input[type="text"]:focus { border-color: var(--brand-color); background: white; box-shadow: 0 0 0 4px rgba(37,99,235,0.1); }
 
-        /* 파일 선택 박스 커스텀 */
-        .file-upload-box { border: 2px dashed var(--divider); padding: 40px; border-radius: 12px; text-align: center; cursor: pointer; transition: 0.2s; background: var(--bg-base); }
-        .file-upload-box:hover { border-color: var(--brand-color); background: #eff6ff; }
-        .file-upload-box p { margin: 0; font-size: 14px; font-weight: 600; color: var(--brand-color); }
+        /* 커스텀 파일 업로드 박스 */
+        .file-drop-zone { border: 2px dashed var(--divider); padding: 50px 20px; border-radius: var(--radius-md); text-align: center; cursor: pointer; transition: 0.2s; background: var(--bg-base); position: relative; overflow: hidden; }
+        .file-drop-zone:hover { border-color: var(--brand-color); background: #eff6ff; }
+        .file-drop-zone.active { border-color: var(--brand-color); background: #eff6ff; }
+        .file-drop-zone p { margin: 0; font-size: 15px; font-weight: 700; color: var(--brand-color); }
+        .file-drop-zone span { font-size: 12px; color: var(--text-secondary); display: block; margin-top: 8px; }
         #videoInput { display: none; }
 
-        .btn-submit { width: 100%; padding: 18px; background: var(--brand-color); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 800; margin-top: 20px; cursor: pointer; transition: 0.3s; }
-        .btn-submit:disabled { background: #cbd5e1; cursor: not-allowed; }
-        .btn-submit:hover:not(:disabled) { background: #1d4ed8; transform: translateY(-2px); }
+        .btn-upload { width: 100%; padding: 18px; background: var(--brand-color); color: white; border: none; border-radius: var(--radius-md); font-size: 16px; font-weight: 800; margin-top: 10px; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(37,99,235,0.3); }
+        .btn-upload:disabled { background: #cbd5e1; box-shadow: none; cursor: not-allowed; }
+        .btn-upload:hover:not(:disabled) { background: #1d4ed8; transform: translateY(-2px); }
 
-        /* 로딩 바 스타일 */
-        #progressContainer { display: none; margin-top: 20px; }
-        .progress-bar { width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
-        .progress-fill { width: 0%; height: 100%; background: var(--brand-color); transition: width 0.3s; }
+        /* 프로그레스 로딩 바 */
+        .progress-container { display: none; margin-top: 24px; }
+        .progress-label { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+        .progress-bar { width: 100%; height: 10px; background: #e5e7eb; border-radius: 5px; overflow: hidden; }
+        .progress-fill { width: 0%; height: 100%; background: var(--brand-color); transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
 
-        .toast-container { position: fixed; bottom: 24px; right: 24px; }
-        .toast { background: #111; color: white; padding: 16px 24px; border-radius: 12px; font-size: 14px; font-weight: 600; opacity: 0; transition: 0.3s; }
-        .toast.show { opacity: 1; }
+        /* 토스트 알림 */
+        .toast-container { position: fixed; bottom: 30px; right: 30px; z-index: 1000; }
+        .toast { background: #111; color: white; padding: 16px 28px; border-radius: 12px; font-size: 14px; font-weight: 600; opacity: 0; transform: translateY(20px); transition: 0.3s; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .toast.show { opacity: 1; transform: translateY(0); }
     </style>
 </head>
 <body>
 
     <header class="header">
         <a href="index.html" class="logo">Entube<span>.</span></a>
-        <div id="userInfo" style="font-weight: 700; font-size: 14px;">로그인 확인 중...</div>
+        <div id="userBadge" style="font-weight: 700; font-size: 14px; color: var(--brand-color);">내 채널</div>
     </header>
 
-    <div class="upload-container">
+    <div class="upload-card">
         <h1>영상 업로드</h1>
-        <p>친구들과 공유하고 싶은 멋진 영상을 올려보세요.</p>
+        <p class="desc">새로운 영감을 친구들과 공유해 보세요.</p>
 
         <div class="form-group">
-            <label>영상 파일</label>
-            <label for="videoInput" class="file-upload-box" id="dropZone">
-                <p id="fileNameDisplay">클릭해서 MP4 영상을 선택하세요</p>
-                <span style="font-size: 12px; color: #94a3b8;">최대 50MB 권장</span>
+            <label>비디오 선택 (MP4)</label>
+            <label for="videoInput" class="file-drop-zone" id="dropZone">
+                <p id="fileLabel">여기를 클릭하거나 파일을 끌어다 놓으세요</p>
+                <span id="fileSubLabel">최대 용량 50MB 미만 권장</span>
             </label>
             <input type="file" id="videoInput" accept="video/mp4,video/x-m4v,video/*">
         </div>
 
         <div class="form-group">
-            <label>제목</label>
-            <input type="text" id="videoTitle" placeholder="영상의 제목을 입력하세요">
+            <label>영상 제목</label>
+            <input type="text" id="vTitle" placeholder="시청자의 눈길을 끄는 제목을 입력하세요">
         </div>
 
         <div class="form-group">
-            <label>카테고리</label>
-            <select id="videoCategory">
-                <option value="엔터테인먼트">엔터테인먼트</option>
-                <option value="음악">음악</option>
-                <option value="게임">게임</option>
-                <option value="뉴스">뉴스</option>
-                <option value="교육">교육</option>
-            </select>
+            <label>카테고리 (직접 입력)</label>
+            <input type="text" id="vCat" placeholder="예: 게임, 음악, 빤쭌일상 등">
         </div>
 
-        <button class="btn-submit" id="uploadBtn" onclick="startUpload()">업로드 시작하기</button>
+        <button class="btn-upload" id="submitBtn" onclick="handleUpload()">업로드 시작하기</button>
 
-        <div id="progressContainer">
-            <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:8px;">
-                <span id="statusText">서버로 전송 중...</span>
-                <span id="percentText">0%</span>
+        <div class="progress-container" id="progContainer">
+            <div class="progress-label">
+                <span id="progStatus">파일 전송 중...</span>
+                <span id="progPercent">0%</span>
             </div>
             <div class="progress-bar">
-                <div class="progress-fill" id="progressFill"></div>
+                <div class="progress-fill" id="progFill"></div>
             </div>
         </div>
     </div>
 
-    <div class="toast-container" id="toastContainer"></div>
+    <div class="toast-container" id="toastBox"></div>
 
     <script>
         const supabaseUrl = 'https://kzchubdwrkcpmuempgrg.supabase.co';
@@ -107,68 +108,73 @@
 
         function showToast(msg) {
             const t = document.createElement('div'); t.className = 'toast'; t.innerText = msg;
-            document.getElementById('toastContainer').appendChild(t);
+            document.getElementById('toastBox').appendChild(t);
             setTimeout(()=>t.classList.add('show'), 10);
             setTimeout(()=>{t.classList.remove('show'); setTimeout(()=>t.remove(), 300);}, 3000);
         }
 
-        // 로그인 체크
-        async function checkAuth() {
+        // 로그인 체크 (안 되어 있으면 쫓아냄!)
+        async function checkUser() {
             const { data: { session } } = await _client.auth.getSession();
             if (!session) {
-                alert("로그인이 필요한 페이지입니다!");
+                alert("로그인이 필요한 서비스입니다! 메인으로 이동합니다.");
                 location.href = 'index.html';
                 return;
             }
-            const { data } = await _client.from('profiles').select('*').eq('id', session.user.id).single();
-            myProfile = data;
-            document.getElementById('userInfo').innerText = `${myProfile.nickname}님 채널`;
+            const { data } = await _client.from('profiles').select('nickname').eq('id', session.user.id).single();
+            myProfile = { id: session.user.id, nickname: data?.nickname || '익명' };
+            document.getElementById('userBadge').innerText = `${myProfile.nickname}님의 채널`;
         }
 
-        // 파일 선택 시 이름 표시
-        document.getElementById('videoInput').onchange = function() {
-            const file = this.files[0];
-            if(file) document.getElementById('fileNameDisplay').innerText = `선택됨: ${file.name}`;
+        // 파일 선택 시 이름 바로 보여주기
+        document.getElementById('videoInput').onchange = function(e) {
+            const file = e.target.files[0];
+            if(file) {
+                document.getElementById('fileLabel').innerText = `선택됨: ${file.name}`;
+                document.getElementById('fileSubLabel').innerText = `${(file.size / (1024*1024)).toFixed(2)} MB`;
+                document.getElementById('dropZone').style.borderColor = "var(--brand-color)";
+            }
         };
 
-        async function startUpload() {
+        // 🚀 진짜 업로드 로직
+        async function handleUpload() {
             const file = document.getElementById('videoInput').files[0];
-            const title = document.getElementById('videoTitle').value.trim();
-            const category = document.getElementById('videoCategory').value;
+            const title = document.getElementById('vTitle').value.trim();
+            const category = document.getElementById('vCat').value.trim() || '일반';
 
-            if (!file || !title) return showToast("파일과 제목을 모두 확인해 주세요!");
+            if (!file || !title) return showToast("파일과 제목을 모두 채워주세요!");
 
-            const btn = document.getElementById('uploadBtn');
-            const progress = document.getElementById('progressContainer');
-            const fill = document.getElementById('progressFill');
-            const pText = document.getElementById('percentText');
+            const btn = document.getElementById('submitBtn');
+            const prog = document.getElementById('progContainer');
+            const fill = document.getElementById('progFill');
+            const per = document.getElementById('progPercent');
+            const stat = document.getElementById('progStatus');
 
             btn.disabled = true;
-            btn.innerText = "업로드 중...";
-            progress.style.display = 'block';
+            btn.innerText = "처리 중...";
+            prog.style.display = 'block';
 
             try {
-                // 1. Storage에 파일 업로드
-                const fileName = `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.mp4`;
+                // 1. Storage에 영상 파일 업로드
+                const fileExt = file.name.split('.').pop();
+                const fileName = `entube_${Date.now()}.${fileExt}`;
                 
-                // (참고) 수퍼베이스 JS SDK v2는 업로드 진행률을 확인하려면 아래와 같은 옵션이 필요함
-                const { data: uploadData, error: uploadError } = await _client.storage
+                stat.innerText = "서버로 영상 전송 중...";
+                const { data: upData, error: upErr } = await _client.storage
                     .from('videos')
-                    .upload(fileName, file, {
-                        cacheControl: '3600',
-                        upsert: false
-                    });
+                    .upload(fileName, file);
 
-                if (uploadError) throw uploadError;
+                if (upErr) throw upErr;
 
-                // 로딩바 50%로 점프 (파일 전송 완료 단계)
-                fill.style.width = '50%'; pText.innerText = '50%';
+                // 절반 성공! (로딩바 애니메이션)
+                fill.style.width = '60%'; per.innerText = '60%';
+                stat.innerText = "데이터베이스 등록 중...";
 
-                // 2. 파일의 공개 URL 가져오기
+                // 2. 파일의 Public URL 따오기
                 const { data: { publicUrl } } = _client.storage.from('videos').getPublicUrl(fileName);
 
-                // 3. DB(posts)에 데이터 저장
-                const { error: dbError } = await _client.from('posts').insert([{
+                // 3. DB에 정보 저장 (author_id 꼭 넣어줘야 함!)
+                const { error: dbErr } = await _client.from('posts').insert([{
                     title: title,
                     video_url: publicUrl,
                     category: category,
@@ -176,23 +182,24 @@
                     likes: 0
                 }]);
 
-                if (dbError) throw dbError;
+                if (dbErr) throw dbErr;
 
-                // 완료!
-                fill.style.width = '100%'; pText.innerText = '100%';
-                showToast("업로드 성공! 메인으로 이동합니다.");
+                // 100% 완료!
+                fill.style.width = '100%'; per.innerText = '100%';
+                stat.innerText = "업로드 완료!";
+                showToast("성공적으로 업로드되었습니다! 🎉");
+                
                 setTimeout(() => location.href = 'index.html', 1500);
 
             } catch (err) {
-                console.error(err);
                 alert("업로드 실패: " + err.message);
                 btn.disabled = false;
                 btn.innerText = "업로드 시작하기";
-                progress.style.display = 'none';
+                prog.style.display = 'none';
             }
         }
 
-        checkAuth();
+        checkUser();
     </script>
 </body>
 </html>
