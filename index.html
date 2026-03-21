@@ -3,93 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Entube</title>
+    <title>Entube - 프리미엄</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* [1] 전역 및 변수 설정 (다크 테마) */
-        :root { --bg-base: #0f0f0f; --bg-surface: #212121; --bg-hover: #3d3d3d; --text-primary: #f1f1f1; --text-secondary: #aaaaaa; --brand-red: #ff0000; --divider: #303030; --blue-link: #3ea6ff; }
-        body { font-family: 'Roboto', 'Arial', sans-serif; background: var(--bg-base); color: var(--text-primary); margin: 0; overflow-x: hidden; display: flex; flex-direction: column; height: 100vh; }
+        /* [1] 전역 및 변수 설정 (모던 라이트 테마) */
+        :root { 
+            --bg-base: #f8f9fa; 
+            --bg-surface: #ffffff; 
+            --bg-hover: #e9ecef; 
+            --text-primary: #212529; 
+            --text-secondary: #6c757d; 
+            --brand-color: #3b82f6; 
+            --divider: #dee2e6; 
+            --danger: #ef4444;
+        }
+        body { font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif; background: var(--bg-base); color: var(--text-primary); margin: 0; overflow-x: hidden; display: flex; flex-direction: column; height: 100vh; }
         * { box-sizing: border-box; }
-        button { cursor: pointer; font-family: inherit; }
+        button { cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
         a { text-decoration: none; color: inherit; }
 
         /* [2] 상단 네비게이션 바 */
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 0 16px; height: 56px; background: var(--bg-base); position: sticky; top: 0; z-index: 1000; }
-        .header-left { display: flex; align-items: center; gap: 16px; }
-        .menu-btn { background: transparent; border: none; color: white; font-size: 20px; padding: 8px; border-radius: 50%; }
-        .menu-btn:hover { background: var(--bg-hover); }
-        .logo { font-size: 20px; font-weight: 900; letter-spacing: -1px; }
-        .logo span { color: var(--brand-red); }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 0 24px; height: 64px; background: var(--bg-surface); position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid var(--divider); }
+        .header-left { display: flex; align-items: center; gap: 20px; }
+        .logo { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: var(--text-primary); cursor: pointer; }
+        .logo span { color: var(--brand-color); }
         
-        .search-container { display: flex; flex: 0 1 600px; align-items: center; }
-        .search-box { display: flex; width: 100%; background: #121212; border: 1px solid var(--divider); border-radius: 40px; overflow: hidden; margin-left: 40px; }
-        .search-box input { flex: 1; padding: 10px 20px; background: transparent; border: none; color: white; font-size: 16px; outline: none; }
-        .search-box button { padding: 10px 20px; background: var(--bg-surface); border: none; border-left: 1px solid var(--divider); color: var(--text-primary); width: 64px; }
+        .search-container { display: flex; flex: 0 1 500px; align-items: center; }
+        .search-box { display: flex; width: 100%; background: var(--bg-base); border: 1px solid var(--divider); border-radius: 8px; overflow: hidden; }
+        .search-box input { flex: 1; padding: 12px 16px; background: transparent; border: none; color: var(--text-primary); font-size: 15px; outline: none; }
+        .search-box input::placeholder { color: #adb5bd; }
+        .search-box button { padding: 10px 20px; background: var(--bg-surface); border: none; border-left: 1px solid var(--divider); color: var(--text-primary); font-weight: 600; }
         .search-box button:hover { background: var(--bg-hover); }
 
-        .header-right { display: flex; align-items: center; gap: 12px; min-width: 150px; justify-content: flex-end; }
-        .btn-auth { display: flex; align-items: center; gap: 6px; background: transparent; color: var(--blue-link); border: 1px solid var(--divider); padding: 6px 15px; border-radius: 18px; font-weight: 600; font-size: 14px; }
-        .btn-auth:hover { background: rgba(62, 166, 255, 0.1); border-color: transparent; }
-        .btn-upload { background: var(--bg-surface); border: none; color: white; padding: 8px 16px; border-radius: 20px; font-weight: 600; }
+        .header-right { display: flex; align-items: center; gap: 16px; min-width: 150px; justify-content: flex-end; }
+        .btn-auth { background: var(--brand-color); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 14px; }
+        .btn-auth:hover { background: #2563eb; }
+        .btn-upload { background: var(--bg-surface); border: 1px solid var(--divider); color: var(--text-primary); padding: 10px 16px; border-radius: 8px; font-weight: 600; font-size: 14px; }
         .btn-upload:hover { background: var(--bg-hover); }
         .profile-wrapper { position: relative; }
-        .profile-img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; cursor: pointer; }
+        .profile-img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; cursor: pointer; border: 1px solid var(--divider); }
 
         /* [3] 프로필 드롭다운 메뉴 */
-        .dropdown { display: none; position: absolute; right: 0; top: 40px; background: var(--bg-surface); border-radius: 8px; width: 250px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); overflow: hidden; z-index: 1000; border: 1px solid var(--divider); }
-        .dropdown-header { padding: 16px; border-bottom: 1px solid var(--divider); display: flex; gap: 12px; align-items: center; }
-        .dropdown-header img { width: 40px; height: 40px; border-radius: 50%; }
-        .dropdown-header div p { margin: 0; font-weight: 600; font-size: 16px; }
-        .dropdown-header div span { margin: 0; font-size: 13px; color: var(--text-secondary); }
-        .dropdown-item { display: block; padding: 12px 16px; color: white; background: transparent; border: none; width: 100%; text-align: left; font-size: 14px; cursor: pointer; }
-        .dropdown-item:hover { background: var(--bg-hover); }
+        .dropdown { display: none; position: absolute; right: 0; top: 48px; background: var(--bg-surface); border-radius: 12px; width: 240px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: hidden; z-index: 1000; border: 1px solid var(--divider); }
+        .dropdown-header { padding: 20px 16px; border-bottom: 1px solid var(--divider); display: flex; gap: 12px; align-items: center; background: var(--bg-base); }
+        .dropdown-header img { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--divider); }
+        .dropdown-header div p { margin: 0 0 4px 0; font-weight: 700; font-size: 15px; }
+        .dropdown-header div span { margin: 0; font-size: 13px; color: var(--brand-color); font-weight: 600; cursor: pointer; }
+        .dropdown-item { display: block; padding: 14px 20px; color: var(--text-primary); background: transparent; border: none; width: 100%; text-align: left; font-size: 14px; font-weight: 500; cursor: pointer; border-bottom: 1px solid #f1f3f5; }
+        .dropdown-item:last-child { border-bottom: none; }
+        .dropdown-item:hover { background: var(--bg-hover); padding-left: 24px; }
 
-        /* [4] 메인 레이아웃 (사이드바 + 콘텐츠) */
+        /* [4] 메인 레이아웃 */
         .main-container { display: flex; flex: 1; overflow: hidden; }
-        .sidebar { width: 72px; padding: 10px 0; display: flex; flex-direction: column; align-items: center; gap: 20px; background: var(--bg-base); border-right: 1px solid var(--divider); overflow-y: auto; }
-        .sidebar-item { display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--text-primary); font-size: 10px; cursor: pointer; width: 64px; padding: 16px 0; border-radius: 10px; }
-        .sidebar-item:hover { background: var(--bg-hover); }
-        .sidebar-item i { font-size: 20px; font-style: normal; }
+        .sidebar { width: 240px; padding: 20px 16px; display: flex; flex-direction: column; gap: 8px; background: var(--bg-surface); border-right: 1px solid var(--divider); overflow-y: auto; }
+        .sidebar-item { display: flex; align-items: center; gap: 16px; color: var(--text-primary); font-size: 15px; font-weight: 600; cursor: pointer; padding: 12px 16px; border-radius: 8px; }
+        .sidebar-item.active { background: #eff6ff; color: var(--brand-color); }
+        .sidebar-item:hover:not(.active) { background: var(--bg-hover); }
 
         .content-area { flex: 1; overflow-y: auto; background: var(--bg-base); }
         
         /* [5] 카테고리 칩 */
-        .category-bar { display: flex; gap: 12px; padding: 12px 24px; position: sticky; top: 0; background: rgba(15, 15, 15, 0.95); z-index: 10; border-bottom: 1px solid var(--divider); overflow-x: auto; }
-        .chip { background: var(--bg-surface); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 14px; font-weight: 500; white-space: nowrap; transition: 0.2s; }
+        .category-bar { display: flex; gap: 10px; padding: 16px 32px; position: sticky; top: 0; background: rgba(248, 249, 250, 0.95); backdrop-filter: blur(5px); z-index: 10; border-bottom: 1px solid var(--divider); overflow-x: auto; }
+        .chip { background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--divider); padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 600; white-space: nowrap; }
         .chip:hover { background: var(--bg-hover); }
-        .chip.active { background: white; color: black; }
+        .chip.active { background: var(--text-primary); color: white; border-color: var(--text-primary); }
 
         /* [6] 비디오 그리드 & 스켈레톤 로딩 */
-        .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; row-gap: 40px; padding: 24px; }
-        .video-card { display: flex; flex-direction: column; gap: 12px; cursor: pointer; }
-        .thumbnail { width: 100%; aspect-ratio: 16/9; border-radius: 12px; background: #000; object-fit: cover; transition: border-radius 0.2s; }
-        .video-card:hover .thumbnail { border-radius: 0; }
-        .details { display: flex; gap: 12px; }
-        .details-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--bg-surface); object-fit: cover; }
-        .meta h3 { margin: 0 0 4px 0; font-size: 16px; font-weight: 600; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        .meta p { margin: 0; font-size: 14px; color: var(--text-secondary); line-height: 1.4; }
+        .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; row-gap: 40px; padding: 32px; }
+        .video-card { display: flex; flex-direction: column; gap: 14px; cursor: pointer; }
+        .thumbnail { width: 100%; aspect-ratio: 16/9; border-radius: 12px; background: #e9ecef; object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .details { display: flex; gap: 14px; }
+        .details-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--divider); object-fit: cover; }
+        .meta h3 { margin: 0 0 6px 0; font-size: 16px; font-weight: 700; color: var(--text-primary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; }
+        .meta p { margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
 
-        /* 스켈레톤 애니메이션 */
         @keyframes shimmer { 0% { background-position: -200px 0; } 100% { background-position: calc(200px + 100%) 0; } }
-        .skeleton { background: linear-gradient(90deg, var(--bg-surface) 25%, var(--bg-hover) 50%, var(--bg-surface) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
+        .skeleton { background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
 
-        /* [7] 전문적인 모달 시스템 */
-        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); z-index: 2000; justify-content: center; align-items: center; }
-        .modal-card { background: var(--bg-surface); padding: 32px; border-radius: 12px; width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .modal-card h2 { margin: 0 0 8px 0; font-size: 24px; }
-        .modal-card p { color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
-        .input-group { margin-bottom: 16px; text-align: left; }
-        .input-group input { width: 100%; padding: 12px 16px; background: transparent; border: 1px solid var(--divider); color: white; border-radius: 8px; font-size: 15px; transition: 0.2s; }
-        .input-group input:focus { border-color: var(--blue-link); outline: none; }
-        .btn-primary { width: 100%; padding: 12px; background: var(--blue-link); color: black; font-weight: bold; border: none; border-radius: 8px; font-size: 15px; margin-top: 8px; transition: 0.2s; }
-        .btn-primary:hover { background: #65b8ff; }
-        .btn-text { width: 100%; padding: 12px; background: transparent; color: var(--blue-link); border: none; font-weight: bold; margin-top: 8px; }
+        /* [7] 모달 시스템 */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 2000; justify-content: center; align-items: center; }
+        .modal-card { background: var(--bg-surface); padding: 40px; border-radius: 16px; width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+        .modal-card h2 { margin: 0 0 10px 0; font-size: 24px; font-weight: 800; color: var(--text-primary); }
+        .modal-card p { color: var(--text-secondary); font-size: 14px; margin-bottom: 30px; }
+        .input-group { margin-bottom: 20px; }
+        .input-group input { width: 100%; padding: 14px 16px; background: var(--bg-base); border: 1px solid var(--divider); color: var(--text-primary); border-radius: 8px; font-size: 15px; }
+        .input-group input:focus { border-color: var(--brand-color); outline: none; background: white; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+        .btn-primary { width: 100%; padding: 14px; background: var(--text-primary); color: white; font-weight: 700; border: none; border-radius: 8px; font-size: 15px; margin-top: 10px; }
+        .btn-primary:hover { background: #000; }
+        .btn-text { width: 100%; padding: 14px; background: transparent; color: var(--text-secondary); border: none; font-weight: 600; margin-top: 8px; }
+        .btn-text:hover { color: var(--text-primary); }
 
-        /* [8] 토스트 알림창 (Toast UI) */
-        .toast-container { position: fixed; bottom: 24px; left: 24px; z-index: 3000; display: flex; flex-direction: column; gap: 10px; }
-        .toast { background: white; color: black; padding: 12px 24px; border-radius: 4px; font-size: 14px; font-weight: 500; box-shadow: 0 2px 10px rgba(0,0,0,0.2); transform: translateY(100px); opacity: 0; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; align-items: center; gap: 10px; }
-        .toast.show { transform: translateY(0); opacity: 1; }
-        .toast.error { background: #ff4e4e; color: white; }
+        /* [8] 토스트 알림창 */
+        .toast-container { position: fixed; bottom: 32px; right: 32px; z-index: 3000; display: flex; flex-direction: column; gap: 12px; }
+        .toast { background: var(--text-primary); color: white; padding: 16px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.15); transform: translateX(100px); opacity: 0; transition: all 0.3s ease; display: flex; align-items: center; gap: 12px; }
+        .toast.show { transform: translateX(0); opacity: 1; }
+        .toast.error { background: var(--danger); }
     </style>
 </head>
 <body>
@@ -98,83 +106,72 @@
 
     <header class="header">
         <div class="header-left">
-            <button class="menu-btn">☰</button>
-            <div class="logo" onclick="location.reload()" style="cursor:pointer;">▶ <span>Entube</span></div>
+            <div class="logo" onclick="location.reload()">Entube<span>.</span></div>
         </div>
         <div class="search-container">
             <div class="search-box">
-                <input type="text" id="searchInput" placeholder="검색" onkeypress="if(event.key==='Enter') searchVideos()">
-                <button onclick="searchVideos()">🔍</button>
+                <input type="text" id="searchInput" placeholder="어떤 영상을 찾으시나요?" onkeypress="if(event.key==='Enter') searchVideos()">
+                <button onclick="searchVideos()">검색</button>
             </div>
         </div>
         <div class="header-right" id="authSection">
-            <button class="btn-auth" onclick="toggleModal('authModal', true)"><i style="font-style:normal;">👤</i> 로그인</button>
+            <button class="btn-auth" onclick="toggleModal('authModal', true)">시작하기</button>
         </div>
     </header>
 
     <div class="main-container">
         <aside class="sidebar">
-            <div class="sidebar-item" onclick="location.reload()"><i>🏠</i><span>홈</span></div>
-            <div class="sidebar-item"><i>⚡</i><span>Shorts</span></div>
-            <div class="sidebar-item"><i>📺</i><span>구독</span></div>
-            <div class="sidebar-item" style="border-top: 1px solid var(--divider); margin-top: 10px; padding-top: 20px;"><i>📂</i><span>보관함</span></div>
+            <div class="sidebar-item active" onclick="location.reload()">홈</div>
+            <div class="sidebar-item">탐색</div>
+            <div class="sidebar-item">구독</div>
+            <div style="height: 1px; background: var(--divider); margin: 10px 0;"></div>
+            <div class="sidebar-item">보관함</div>
+            <div class="sidebar-item">시청 기록</div>
         </aside>
 
         <main class="content-area">
             <div class="category-bar">
                 <button class="chip active">전체</button>
-                <button class="chip">실시간</button>
+                <button class="chip">트렌딩</button>
                 <button class="chip">음악</button>
-                <button class="chip">게임</button>
-                <button class="chip">뉴스</button>
-                <button class="chip">최근에 업로드된 영상</button>
+                <button class="chip">엔터테인먼트</button>
+                <button class="chip">교육</button>
+                <button class="chip">최신 업로드</button>
             </div>
             
-            <div class="video-grid" id="videoGrid">
-                ${Array(8).fill().map(() => `
-                <div class="video-card">
-                    <div class="thumbnail skeleton"></div>
-                    <div class="details">
-                        <div class="details-avatar skeleton"></div>
-                        <div style="flex:1;">
-                            <div class="skeleton" style="height: 16px; width: 90%; margin-bottom: 8px;"></div>
-                            <div class="skeleton" style="height: 14px; width: 60%;"></div>
-                        </div>
-                    </div>
-                </div>`).join('')}
-            </div>
+            <div class="video-grid" id="videoGrid"></div>
         </main>
     </div>
 
     <div class="modal-overlay" id="authModal">
         <div class="modal-card">
-            <h2>로그인</h2>
-            <p>Entube 계정으로 계속하세요</p>
+            <h2>환영합니다</h2>
+            <p>이메일로 간편하게 시작하세요</p>
             <div class="input-group">
-                <input type="email" id="authEmail" placeholder="이메일 또는 휴대전화">
+                <input type="email" id="authEmail" placeholder="이메일 주소">
             </div>
             <div class="input-group">
-                <input type="password" id="authPw" placeholder="비밀번호 입력">
+                <input type="password" id="authPw" placeholder="비밀번호 (6자리 이상)">
             </div>
-            <button class="btn-primary" onclick="handleAuth('login')">다음</button>
-            <button class="btn-text" onclick="handleAuth('signup')">계정 만들기</button>
-            <button class="btn-text" style="color:var(--text-secondary);" onclick="toggleModal('authModal', false)">취소</button>
+            <button class="btn-primary" onclick="handleAuth('login')">로그인</button>
+            <button class="btn-text" style="color: var(--brand-color);" onclick="handleAuth('signup')">새 계정 만들기</button>
+            <button class="btn-text" onclick="toggleModal('authModal', false)">닫기</button>
         </div>
     </div>
 
     <div class="modal-overlay" id="profileModal">
         <div class="modal-card" style="text-align: center;">
-            <h2>내 채널 맞춤설정</h2>
-            <p>시청자에게 표시될 이름과 사진을 변경하세요</p>
-            <img id="pfpPreview" src="" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid var(--bg-hover); margin-bottom: 20px;">
+            <h2>프로필 설정</h2>
+            <p>자신만의 멋진 채널을 만들어보세요</p>
+            <img id="pfpPreview" src="" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
             <div class="input-group">
-                <input type="file" id="pfpInput" accept="image/*" onchange="previewImage(this)" style="font-size: 13px; border:none; padding:0;">
+                <input type="file" id="pfpInput" accept="image/*" onchange="previewImage(this)" style="border:none; padding:0; background:transparent;">
             </div>
             <div class="input-group">
-                <input type="text" id="nickInput" placeholder="채널 이름 (닉네임)">
+                <input type="text" id="nickInput" placeholder="채널 이름 입력">
             </div>
-            <button class="btn-primary" id="saveBtn" onclick="saveProfile()" style="background:var(--brand-red); color:white;">채널 저장</button>
-            <button class="btn-text" style="color:var(--text-secondary);" onclick="toggleModal('profileModal', false)">닫기</button>
+            <button class="btn-primary" id="saveBtn" onclick="saveProfile()" style="background:var(--brand-color);">변경사항 저장</button>
+            <button class="btn-text" onclick="toggleModal('profileModal', false)">취소</button>
         </div>
     </div>
 
@@ -186,22 +183,20 @@
         let myProfile = null;
         const defaultPfp = 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png';
 
-        // [기능 1] 프로페셔널 토스트 알림창
         function showToast(message, isError = false) {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
             toast.className = `toast ${isError ? 'error' : ''}`;
-            toast.innerHTML = isError ? `⚠️ ${message}` : `✅ ${message}`;
+            toast.innerHTML = isError ? `[오류] ${message}` : `[알림] ${message}`;
             container.appendChild(toast);
             
-            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => toast.classList.add('show'), 10);
             setTimeout(() => {
                 toast.classList.remove('show');
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
         }
 
-        // [기능 2] 상태 초기화 및 인증 감지
         _client.auth.onAuthStateChange(async (_event, session) => {
             if (session) {
                 try {
@@ -216,26 +211,25 @@
             loadVideos();
         });
 
-        // [기능 3] 동적 헤더 렌더링 (드롭다운 포함)
         function renderHeader() {
             const area = document.getElementById('authSection');
             if (myProfile) {
                 area.innerHTML = `
-                    <button class="btn-upload" onclick="location.href='upload.html'">+ 만들기</button>
+                    <button class="btn-upload" onclick="location.href='upload.html'">업로드</button>
                     <div class="profile-wrapper">
                         <img src="${myProfile.avatar_url || defaultPfp}" class="profile-img" onclick="toggleDropdown()">
                         <div class="dropdown" id="userDropdown">
                             <div class="dropdown-header">
                                 <img src="${myProfile.avatar_url || defaultPfp}">
-                                <div><p>${myProfile.nickname || '익명'}</p><span>채널 보기</span></div>
+                                <div><p>${myProfile.nickname || '익명'}</p><span>채널 관리</span></div>
                             </div>
-                            <button class="dropdown-item" onclick="openProfileEdit()">⚙️ 내 채널 수정</button>
-                            <button class="dropdown-item" onclick="signOut()">👋 로그아웃</button>
+                            <button class="dropdown-item" onclick="openProfileEdit()">프로필 수정</button>
+                            <button class="dropdown-item" onclick="signOut()">로그아웃</button>
                         </div>
                     </div>
                 `;
             } else {
-                area.innerHTML = `<button class="btn-auth" onclick="toggleModal('authModal', true)">👤 로그인</button>`;
+                area.innerHTML = `<button class="btn-auth" onclick="toggleModal('authModal', true)">시작하기</button>`;
             }
         }
 
@@ -250,7 +244,6 @@
             }
         });
 
-        // [기능 4] 모달 및 인증 처리
         function toggleModal(id, show) { document.getElementById(id).style.display = show ? 'flex' : 'none'; }
         
         function openProfileEdit() {
@@ -271,18 +264,18 @@
         async function handleAuth(type) {
             const email = document.getElementById('authEmail').value.trim();
             const pw = document.getElementById('authPw').value.trim();
-            if (!email || !pw) return showToast("이메일과 비밀번호를 입력해주세요.", true);
+            if (!email || !pw) return showToast("이메일과 비밀번호를 모두 입력해주세요.", true);
 
             try {
                 if (type === 'signup') {
                     const { error } = await _client.auth.signUp({ email, password: pw });
                     if (error) throw error;
-                    showToast("계정이 생성되었습니다. 즉시 로그인됩니다.");
+                    showToast("계정이 생성되었습니다.");
                     toggleModal('authModal', false);
                 } else {
                     const { error } = await _client.auth.signInWithPassword({ email, password: pw });
                     if (error) throw error;
-                    showToast("환영합니다!");
+                    showToast("로그인 성공");
                     toggleModal('authModal', false);
                 }
             } catch(e) { showToast(e.message, true); }
@@ -290,16 +283,15 @@
 
         async function signOut() {
             await _client.auth.signOut();
-            showToast("로그아웃 되었습니다.");
+            showToast("안전하게 로그아웃 되었습니다.");
             renderHeader();
         }
 
-        // [기능 5] 채널 저장 (스토리지 처리)
         async function saveProfile() {
             const btn = document.getElementById('saveBtn');
             const nick = document.getElementById('nickInput').value.trim();
             const file = document.getElementById('pfpInput').files[0];
-            if (!nick) return showToast("채널 이름을 입력해주세요.", true);
+            if (!nick) return showToast("닉네임은 필수입니다.", true);
 
             btn.disabled = true; btn.innerText = "저장 중...";
             let url = myProfile.avatar_url;
@@ -314,15 +306,14 @@
                 const { error: dbErr } = await _client.from('profiles').update({ nickname: nick, avatar_url: url }).eq('id', myProfile.id);
                 if (dbErr) throw dbErr;
 
-                showToast("채널 설정이 업데이트되었습니다!");
+                showToast("프로필이 성공적으로 업데이트되었습니다.");
                 setTimeout(() => location.reload(), 1000);
             } catch (err) {
-                showToast("업데이트 실패: " + err.message, true);
-                btn.disabled = false; btn.innerText = "채널 저장";
+                showToast("저장 실패: " + err.message, true);
+                btn.disabled = false; btn.innerText = "변경사항 저장";
             }
         }
 
-        // [기능 6] 시간 변환기 (유튜브 스타일)
         function timeAgo(dateString) {
             const date = new Date(dateString);
             const seconds = Math.floor((new Date() - date) / 1000);
@@ -339,29 +330,42 @@
             return "방금 전";
         }
 
-        // [기능 7] 영상 불러오기 (검색 및 렌더링)
         async function loadVideos(searchQuery = '') {
             const grid = document.getElementById('videoGrid');
+            
+            // 🚀 스켈레톤 로딩 (자바스크립트 내부에 안전하게 배치)
+            grid.innerHTML = Array(8).fill().map(() => `
+                <div class="video-card">
+                    <div class="thumbnail skeleton"></div>
+                    <div class="details">
+                        <div class="details-avatar skeleton"></div>
+                        <div style="flex:1;">
+                            <div class="skeleton" style="height: 18px; width: 85%; margin-bottom: 8px;"></div>
+                            <div class="skeleton" style="height: 14px; width: 50%;"></div>
+                        </div>
+                    </div>
+                </div>`).join('');
+
             let query = _client.from('posts').select('*, profiles(nickname, avatar_url)').order('created_at', { ascending: false });
             if (searchQuery) query = query.ilike('title', `%${searchQuery}%`);
             
             const { data: videos, error } = await query;
             if (error) {
-                showToast("영상을 불러오지 못했습니다.", true);
+                showToast("데이터를 불러오는데 실패했습니다.", true);
                 return;
             }
 
             grid.innerHTML = '';
             if(!videos || videos.length === 0) {
-                grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 50px; color:var(--text-secondary);">결과가 없습니다.</div>`;
+                grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 60px; color:var(--text-secondary); font-size: 16px;">해당하는 영상이 없습니다.</div>`;
                 return;
             }
 
             videos.forEach(v => {
-                const nick = v.profiles?.nickname || '알 수 없는 유저';
+                const nick = v.profiles?.nickname || '알 수 없음';
                 const pfp = v.profiles?.avatar_url || defaultPfp;
-                const viewMock = Math.floor(Math.random() * 900) + 10; // 임시 조회수
-                const time = v.created_at ? timeAgo(v.created_at) : '최근';
+                const viewMock = Math.floor(Math.random() * 900) + 10;
+                const time = v.created_at ? timeAgo(v.created_at) : '방금 전';
                 
                 const div = document.createElement('div');
                 div.className = 'video-card';
