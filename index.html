@@ -183,6 +183,15 @@
         let myProfile = null;
         const defaultPfp = 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png';
 
+        // [보안] XSS 방어 함수 추가
+        function escapeHTML(str) {
+            if (!str) return '';
+            return str.replace(/[&<>'"]/g, function(tag) {
+                const charsToReplace = { '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' };
+                return charsToReplace[tag] || tag;
+            });
+        }
+
         function showToast(message, isError = false) {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
@@ -221,7 +230,7 @@
                         <div class="dropdown" id="userDropdown">
                             <div class="dropdown-header">
                                 <img src="${myProfile.avatar_url || defaultPfp}">
-                                <div><p>${myProfile.nickname || '익명'}</p><span>채널 관리</span></div>
+                                <div><p>${escapeHTML(myProfile.nickname) || '익명'}</p><span>채널 관리</span></div>
                             </div>
                             <button class="dropdown-item" onclick="openProfileEdit()">프로필 수정</button>
                             <button class="dropdown-item" onclick="signOut()">로그아웃</button>
@@ -237,6 +246,7 @@
             const el = document.getElementById('userDropdown');
             el.style.display = el.style.display === 'block' ? 'none' : 'block';
         }
+        
         document.addEventListener('click', (e) => {
             if(myProfile && !e.target.closest('.profile-wrapper')) {
                 const el = document.getElementById('userDropdown');
@@ -333,7 +343,7 @@
         async function loadVideos(searchQuery = '') {
             const grid = document.getElementById('videoGrid');
             
-            // 🚀 스켈레톤 로딩 (자바스크립트 내부에 안전하게 배치)
+            // 스켈레톤 로딩 (JS 내부에서 처리)
             grid.innerHTML = Array(8).fill().map(() => `
                 <div class="video-card">
                     <div class="thumbnail skeleton"></div>
@@ -362,10 +372,14 @@
             }
 
             videos.forEach(v => {
-                const nick = v.profiles?.nickname || '알 수 없음';
+                const rawNick = v.profiles?.nickname || '알 수 없음';
                 const pfp = v.profiles?.avatar_url || defaultPfp;
                 const viewMock = Math.floor(Math.random() * 900) + 10;
                 const time = v.created_at ? timeAgo(v.created_at) : '방금 전';
+                
+                // 보안: XSS 방어 적용
+                const safeTitle = escapeHTML(v.title);
+                const safeNick = escapeHTML(rawNick);
                 
                 const div = document.createElement('div');
                 div.className = 'video-card';
@@ -374,8 +388,8 @@
                     <div class="details">
                         <img src="${pfp}" class="details-avatar">
                         <div class="meta">
-                            <h3>${v.title}</h3>
-                            <p>${nick}<br>조회수 ${viewMock}회 • ${time}</p>
+                            <h3>${safeTitle}</h3>
+                            <p>${safeNick}<br>조회수 ${viewMock}회 • ${time}</p>
                         </div>
                     </div>`;
                 grid.appendChild(div);
