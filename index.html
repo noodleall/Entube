@@ -16,7 +16,7 @@
         * { box-sizing: border-box; }
         button { cursor: pointer; transition: 0.2s; border: none; font-family: inherit; }
         
-        /* 헤더 디자인 */
+        /* [1] 헤더 디자인 */
         .header { display: flex; justify-content: space-between; align-items: center; padding: 0 32px; height: 72px; background: white; position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid var(--divider); }
         .logo { font-size: 24px; font-weight: 800; cursor: pointer; letter-spacing: -1px; }
         .logo span { color: var(--brand-color); }
@@ -25,7 +25,7 @@
         .header-right { display: flex; gap: 16px; align-items: center; }
         .btn-main { background: var(--brand-color); color: white; padding: 10px 20px; border-radius: 20px; font-weight: 700; }
 
-        /* 레이아웃 & 사이드바 */
+        /* [2] 레이아웃 */
         .main-container { display: flex; flex: 1; overflow: hidden; }
         .sidebar { width: 240px; padding: 24px 16px; background: white; border-right: 1px solid var(--divider); }
         .sidebar-item { padding: 12px 16px; font-weight: 600; cursor: pointer; border-radius: 8px; margin-bottom: 4px; }
@@ -36,7 +36,7 @@
         .chip { padding: 8px 16px; border-radius: 20px; border: 1px solid var(--divider); background: white; font-weight: 600; }
         .chip.active { background: var(--text-primary); color: white; }
 
-        /* 영상 그리드 */
+        /* [3] 영상 그리드 (조회수 제거됨) */
         .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 32px; padding: 32px; }
         .video-card { cursor: pointer; transition: 0.2s; }
         .video-card:hover { transform: translateY(-4px); }
@@ -44,25 +44,36 @@
         .meta { margin-top: 12px; display: flex; gap: 12px; }
         .meta-img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
 
-        /* 📺 확대 플레이어 모달 */
+        /* [4] 📺 확대 플레이어 모달 (잘림 방지 핵심 CSS) */
         .player-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; justify-content: center; overflow-y: auto; padding: 40px 0; }
-        .player-content { background: white; width: 90%; max-width: 900px; border-radius: 16px; overflow: hidden; }
-        .video-wrapper video { width: 100%; aspect-ratio: 16/9; background: #000; display: block; }
+        .player-content { 
+            background: white; 
+            width: 90%; 
+            max-width: 900px; /* 창이 너무 커지지 않게 제한 */
+            border-radius: 16px; 
+            overflow: hidden; 
+            margin-bottom: 40px; 
+        }
+        .video-wrapper video { 
+            width: 100% !important; /* 모달 너비에 100% 맞춤 */
+            height: auto; 
+            max-height: 70vh; /* 화면 높이의 70%까지만 허용 */
+            background: #000; 
+            display: block; 
+        }
         .player-info { padding: 24px; border-bottom: 1px solid var(--divider); display: flex; justify-content: space-between; align-items: center; }
         
-        /* 💬 댓글창 */
+        /* [5] 댓글창 */
         .comment-area { padding: 24px; background: #fdfdfd; }
         .comment-input-box { display: flex; gap: 12px; margin-bottom: 24px; }
         .comment-input-box input { flex: 1; padding: 12px; border: 1px solid var(--divider); border-radius: 8px; }
-        .comment-list { display: flex; flex-direction: column; gap: 16px; }
+        .comment-list { display: flex; flex-direction: column; gap: 16px; font-size: 14px; }
 
-        /* 공통 모달 (로그인/프로필) */
+        /* [6] 공통 모달 & 토스트 */
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 4000; justify-content: center; align-items: center; }
         .modal-card { background: white; padding: 40px; border-radius: 16px; width: 380px; text-align: center; }
         .input-group { margin-bottom: 16px; }
         .input-group input { width: 100%; padding: 14px; border: 1px solid var(--divider); border-radius: 8px; }
-
-        /* 알림 토스트 */
         .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 5000; }
         .toast { background: #333; color: white; padding: 16px 24px; border-radius: 8px; margin-top: 10px; opacity: 0; transition: 0.3s; }
         .toast.show { opacity: 1; }
@@ -100,13 +111,15 @@
 
     <div id="playerModal" class="player-modal" onclick="if(event.target==this) closePlayer()">
         <div class="player-content">
-            <video id="mainVideo" controls autoplay></video>
+            <div class="video-wrapper">
+                <video id="mainVideo" controls autoplay></video>
+            </div>
             <div class="player-info">
                 <div>
                     <h2 id="playerTitle" style="margin:0;">제목</h2>
                     <p id="playerMeta" style="color:var(--text-secondary); margin:4px 0 0 0;">작성자</p>
                 </div>
-                <button onclick="hitLike()" style="background:#eee; padding:10px 20px; border-radius:20px; font-weight:bold;">👍 <span id="likeCount">0</span></button>
+                <button onclick="hitLike()" style="background:#f3f4f6; padding:10px 20px; border-radius:20px; font-weight:bold;">👍 <span id="likeCount">0</span></button>
             </div>
             <div class="comment-area">
                 <div class="comment-input-box">
@@ -126,7 +139,7 @@
             <div class="input-group"><input type="password" id="authPw" placeholder="비밀번호 (6자 이상)"></div>
             <div class="input-group" id="nickG" style="display:none;"><input type="text" id="authNick" placeholder="사용할 닉네임"></div>
             <button class="btn-main" style="width:100%; padding:14px;" onclick="executeAuth()">확인</button>
-            <button onclick="isSignUp = !isSignUp; updateAuthUI();" style="background:none; color:blue; margin-top:15px; text-decoration:underline;">회원가입/로그인 전환</button>
+            <button onclick="isSignUp = !isSignUp; updateAuthUI();" style="background:none; color:blue; margin-top:15px; text-decoration:underline; font-size:13px;">회원가입/로그인 전환</button>
             <button onclick="closeModal('authModal')" style="display:block; margin:15px auto 0; background:none; color:#aaa;">취소</button>
         </div>
     </div>
@@ -174,10 +187,10 @@
                 area.innerHTML = `
                     <button class="btn-main" style="background:#eee; color:#333; margin-right:8px;" onclick="location.href='upload.html'">업로드</button>
                     <img src="${myProfile.avatar_url || defaultPfp}" style="width:36px; height:36px; border-radius:50%; cursor:pointer;" onclick="openModal('profileModal')">
-                    <b style="margin:0 10px; cursor:pointer;" onclick="openModal('profileModal')">${myProfile.nickname}님</b>
+                    <b style="margin:0 10px; cursor:pointer; font-size:14px;" onclick="openModal('profileModal')">${myProfile.nickname}님</b>
                     <button onclick="_client.auth.signOut().then(()=>location.reload())" style="background:none; color:red; font-size:12px;">로그아웃</button>`;
             } else {
-                area.innerHTML = `<button class="btn-auth" onclick="openModal('authModal')">시작하기</button>`;
+                area.innerHTML = `<button class="btn-main" onclick="openModal('authModal')">시작하기</button>`;
             }
         }
 
@@ -197,7 +210,6 @@
             if (isSignUp) {
                 const { data, error } = await _client.auth.signUp({ email, password: pw });
                 if (error) return alert(error.message);
-                // 🚀 가입 시 프로필 생성
                 await _client.from('profiles').insert([{ id: data.user.id, nickname: nick }]);
                 showToast("가입 완료! 로그인하세요."); location.reload();
             } else {
@@ -261,38 +273,25 @@
         }
 
         async function loadComments(postId) {
-            // 🚀 profiles와 조인하여 작성자 닉네임 가져오기
             const { data: comments } = await _client.from('comments').select('*, profiles(nickname)').eq('post_id', postId).order('created_at', {ascending: true});
             const list = document.getElementById('commentList');
-            list.innerHTML = comments?.length ? '' : '첫 댓글을 남겨보세요!';
+            list.innerHTML = comments?.length ? '' : '<p style="color:#aaa;">첫 댓글을 남겨보세요!</p>';
             comments?.forEach(c => {
                 const d = document.createElement('div');
-                d.style.marginBottom = "8px";
+                d.style.marginBottom = "10px";
                 d.innerHTML = `<b style="color:var(--brand-color)">${c.profiles?.nickname || '익명'}:</b> ${c.content}`;
                 list.appendChild(d);
             });
         }
 
         async function postComment() {
-            if(!myProfile) return showToast("로그인해라!");
+            if(!myProfile) return showToast("로그인이 필요합니다!");
             const content = document.getElementById('commentInput').value.trim();
             if(!content) return;
             
-            // 🚀 author_id 컬럼에 현재 로그인 유저 ID 넣기
-            const { error } = await _client.from('comments').insert([{ 
-                post_id: currentVideo.id, 
-                author_id: myProfile.id, 
-                content: content 
-            }]);
-
-            if(error) {
-                console.error(error);
-                alert("실패: " + error.message);
-            } else { 
-                document.getElementById('commentInput').value = ''; 
-                loadComments(currentVideo.id); 
-                showToast("댓글 등록!");
-            }
+            const { error } = await _client.from('comments').insert([{ post_id: currentVideo.id, author_id: myProfile.id, content: content }]);
+            if(error) alert("실패: " + error.message);
+            else { document.getElementById('commentInput').value = ''; loadComments(currentVideo.id); showToast("댓글 등록!"); }
         }
 
         init();
